@@ -1,0 +1,34 @@
+{
+  "compilerOptions": {
+    "lib": ["es2023"],
+    "module": "CommonJS",
+    "moduleResolution": "node",
+    "target": "es2022",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "noUncheckedIndexedAccess": true,
+
+    "paths": {
+      "@config/*": ["src/config/*"],
+      "@package": ["package.json"]
+    },
+
+    "baseUrl": ".",
+    "outDir": "./dist",
+    "sourceMap": true,
+    "inlineSources": true,
+
+    "sourceRoot": "/"
+  },
+  "include": [
+    "src/**/*.ts",
+    "test/**/*.ts",
+    "eslint.config.mjs",
+    "scripts/*.ts",
+    ".drizzle/**/*.ts",
+    "drizzle.config.ts"
+  ]
+}
