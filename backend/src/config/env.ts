@@ -92,8 +92,28 @@ const config = convict({
     secret: {
       doc: 'The secret key for the auth.',
       format: String,
-      default: 'SECRET',
+      default: '',
       env: 'AUTH_SECRET',
+    },
+  },
+  google: {
+    clientId: {
+      doc: 'The client ID for Google OAuth.',
+      format: String,
+      default: '',
+      env: 'GOOGLE_CLIENT_ID',
+    },
+    secret: {
+      doc: 'The secret for Google OAuth.',
+      format: String,
+      default: '',
+      env: 'GOOGLE_SECRET',
+    },
+    redirectUrl: {
+      doc: 'The redirect URL for Google OAuth.',
+      format: 'url',
+      default: '',
+      env: 'GOOGLE_REDIRECT_URL',
     },
   },
 });

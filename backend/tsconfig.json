@@ -13,7 +13,15 @@
 
     "paths": {
       "@config/*": ["src/config/*"],
-      "@package": ["package.json"]
+      "@common/*": ["src/common/*"],
+      "@services/*": ["src/services/*"],
+      "@controllers/*": ["src/controllers/*"],
+      "@middlewares/*": ["src/middlewares/*"],
+      "@routes/*": ["src/routes/*"],
+      "@package": ["package.json"],
+      "@logger": ["src/config/logger.ts"],
+      "@schema": [".drizzle/schema"],
+      "@utils/*": ["src/utils/*"]
     },
 
     "baseUrl": ".",
@@ -29,6 +37,7 @@
     "eslint.config.mjs",
     "scripts/*.ts",
     ".drizzle/**/*.ts",
-    "drizzle.config.ts"
+    "drizzle.config.ts",
+    "decs.d.ts"
   ]
 }
