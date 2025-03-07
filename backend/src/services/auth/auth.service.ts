@@ -1,21 +1,21 @@
-import axios from 'axios';
+import axios from "axios";
 
-import { encodeQueryObject } from 'src/utils/encodeQueryObject';
-import config from '@config/env';
+import { encodeQueryObject } from "src/utils/encodeQueryObject";
+import config from "@config/env";
 
-import { GoogleLoginParams, GoogleUser } from '@services/auth/types';
-import { validateGoogleTokenReturn } from '@services/auth/utils/validateGoogleTokenReturn';
-import { AppError } from '@common/error/appError';
-import { GenericErrors } from '@common/constants/error';
-import { getOrCreateUserWithGoogle } from '@services/user';
+import { GoogleLoginParams, GoogleUser } from "@services/auth/types";
+import { validateGoogleTokenReturn } from "@services/auth/utils";
+import { AppError } from "@common/error/appError";
+import { GenericErrors } from "@common/constants/error";
+import { getOrCreateUserWithGoogle } from "@services/user";
 
 function getGoogleLoginUrl() {
   const params: GoogleLoginParams = {
-    response_type: 'code',
+    response_type: "code",
     redirect_uri: config.google.redirectUrl,
     client_id: config.google.clientId,
-    scope: ['https://www.googleapis.com/auth/userinfo.email', 'https://www.googleapis.com/auth/userinfo.profile'].join(
-      ' ',
+    scope: ["https://www.googleapis.com/auth/userinfo.email", "https://www.googleapis.com/auth/userinfo.profile"].join(
+      " ",
     ),
   };
 
@@ -28,24 +28,24 @@ async function validateAndGetUser(code: string) {
     client_id: config.google.clientId,
     client_secret: config.google.secret,
     redirect_uri: config.google.redirectUrl,
-    grant_type: 'authorization_code',
+    grant_type: "authorization_code",
   };
 
   const tokenConfig = {
     headers: {
-      'Accept-Language': 'en',
-      'Content-Type': 'application/x-www-form-urlencoded',
+      "Accept-Language": "en",
+      "Content-Type": "application/x-www-form-urlencoded",
     },
   };
 
-  const tokenResponse = await axios.post('https://oauth2.googleapis.com/token', tokenBody, tokenConfig);
+  const tokenResponse = await axios.post("https://oauth2.googleapis.com/token", tokenBody, tokenConfig);
 
   if (!validateGoogleTokenReturn(tokenResponse.data)) {
     throw new AppError(GenericErrors.UNEXPECTED_ERROR);
   }
 
   const authenticationQuery = {
-    alt: 'json',
+    alt: "json",
     access_token: tokenResponse.data.access_token,
   };
 

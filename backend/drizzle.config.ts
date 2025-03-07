@@ -1,10 +1,10 @@
-import { defineConfig } from 'drizzle-kit';
-import config from '@config/env';
+import { defineConfig } from "drizzle-kit";
+import config from "@config/env";
 
 export default defineConfig({
-  schema: './src/services/**/models/*.ts',
-  out: './.drizzle/migrations',
-  dialect: 'postgresql',
+  schema: "./src/services/**/models/*.ts",
+  out: "./.drizzle/migrations",
+  dialect: "postgresql",
   dbCredentials: {
     host: config.db.host,
     port: config.db.port,

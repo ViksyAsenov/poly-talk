@@ -1,1 +1,1 @@
-export * from '@services/auth/types/google';
+export * from "@services/auth/types/google";

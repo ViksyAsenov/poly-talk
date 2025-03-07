@@ -1,1 +1,1 @@
-export * from '@services/language/models/language';
+export * from "@services/language/models/language";

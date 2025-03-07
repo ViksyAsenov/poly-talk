@@ -1,1 +1,1 @@
-export * from '@common/error/types/error';
+export * from "@common/error/types/error";

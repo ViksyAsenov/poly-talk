@@ -1,0 +1,608 @@
+import { db } from "@config/db";
+import { eq, and, desc } from "drizzle-orm";
+
+import { getMinUserById, areFriends } from "@services/user";
+import { getLanguageById } from "@services/language";
+import { ConversationParticipants, Conversations, Messages, MessageTranslations } from "@services/chat/models";
+import { ChatErrors } from "@services/chat/constants";
+import { AppError } from "@common/error/appError";
+import logger from "@config/logger";
+import { GenericErrors } from "@common/constants/error";
+
+const getConversationById = async (conversationId: string) => {
+  const conversation = (await db.select().from(Conversations).where(eq(Conversations.id, conversationId)))[0];
+
+  if (!conversation) {
+    throw new AppError(ChatErrors.NOT_FOUND);
+  }
+
+  return conversation;
+};
+
+const getConversationParticipants = async (conversationId: string) => {
+  const participants = await db
+    .select()
+    .from(ConversationParticipants)
+    .where(eq(ConversationParticipants.conversationId, conversationId));
+
+  const participantsWithDetails = await Promise.all(
+    participants.map(async (participant) => {
+      const user = await getMinUserById(participant.userId);
+
+      return {
+        ...participant,
+        user,
+      };
+    }),
+  );
+
+  return participantsWithDetails;
+};
+
+const isParticipant = async (userId: string, conversationId: string) => {
+  const participant = (
+    await db
+      .select()
+      .from(ConversationParticipants)
+      .where(
+        and(eq(ConversationParticipants.userId, userId), eq(ConversationParticipants.conversationId, conversationId)),
+      )
+  )[0];
+
+  return Boolean(participant);
+};
+
+const createDirectConversation = async (userId: string, otherUserId: string) => {
+  const friendship = await areFriends(userId, otherUserId);
+
+  if (!friendship) {
+    throw new AppError(ChatErrors.NOT_FRIENDS);
+  }
+
+  if (userId === otherUserId) {
+    throw new AppError(ChatErrors.CANNOT_MESSAGE_SELF);
+  }
+
+  const existingConversations = await getUserConversations(userId);
+
+  for (const conversations of existingConversations) {
+    if (!conversations.isGroup && conversations.participants.length === 2) {
+      const otherParticipant = conversations.participants.find((p) => p.userId !== userId);
+
+      if (otherParticipant && otherParticipant.userId === otherUserId) {
+        return await getConversationDetails(conversations.id, userId);
+      }
+    }
+  }
+
+  const user = await getMinUserById(userId);
+  const otherUser = await getMinUserById(otherUserId);
+
+  const conversation = (
+    await db
+      .insert(Conversations)
+      .values({
+        isGroup: false,
+        name: null,
+      })
+      .returning()
+  )[0];
+
+  if (!conversation) {
+    throw new AppError(GenericErrors.UNEXPECTED_ERROR, { conversation });
+  }
+
+  await db.insert(ConversationParticipants).values([
+    {
+      userId: user.id,
+      conversationId: conversation.id,
+      isAdmin: false,
+    },
+    {
+      userId: otherUser.id,
+      conversationId: conversation.id,
+      isAdmin: false,
+    },
+  ]);
+
+  return await getConversationDetails(conversation.id, userId);
+};
+
+const createGroupConversation = async (userId: string, groupData: { name: string; participantIds: string[] }) => {
+  const user = await getMinUserById(userId);
+
+  const conversation = (
+    await db
+      .insert(Conversations)
+      .values({
+        name: groupData.name,
+        isGroup: true,
+      })
+      .returning()
+  )[0];
+
+  if (!conversation) {
+    throw new AppError(GenericErrors.UNEXPECTED_ERROR, { conversation });
+  }
+
+  await db.insert(ConversationParticipants).values({
+    userId: user.id,
+    conversationId: conversation.id,
+    isAdmin: true,
+  });
+
+  for (const participantId of groupData.participantIds) {
+    if (participantId !== userId) {
+      const participant = await getMinUserById(participantId);
+
+      await db.insert(ConversationParticipants).values({
+        userId: participant.id,
+        conversationId: conversation.id,
+        isAdmin: false,
+      });
+    }
+  }
+
+  return await getConversationDetails(conversation.id, userId);
+};
+
+const getConversationDetails = async (conversationId: string, userId: string) => {
+  const isUserParticipant = await isParticipant(userId, conversationId);
+
+  if (!isUserParticipant) {
+    throw new AppError(ChatErrors.NOT_PARTICIPANT);
+  }
+
+  const conversation = await getConversationById(conversationId);
+
+  const participants = await getConversationParticipants(conversationId);
+
+  const messages = await getConversationMessages(conversationId, userId);
+
+  return {
+    ...conversation,
+    participants,
+    messages,
+  };
+};
+
+const getUserConversations = async (userId: string) => {
+  const user = await getMinUserById(userId);
+
+  const participants = await db
+    .select()
+    .from(ConversationParticipants)
+    .where(eq(ConversationParticipants.userId, userId));
+
+  const conversations = await Promise.all(
+    participants.map(async (participation) => {
+      const conversation = await getConversationById(participation.conversationId);
+
+      const latestMessage = (
+        await db
+          .select()
+          .from(Messages)
+          .where(eq(Messages.conversationId, conversation.id))
+          .orderBy(desc(Messages.createdAt))
+          .limit(1)
+      )[0];
+
+      let previewMessage = null;
+      if (latestMessage) {
+        if (!user.languageId) {
+          previewMessage = latestMessage.content;
+        } else {
+          const translation = (
+            await db
+              .select()
+              .from(MessageTranslations)
+              .where(
+                and(
+                  eq(MessageTranslations.messageId, latestMessage.id),
+                  eq(MessageTranslations.targetLanguageId, user.languageId),
+                ),
+              )
+          )[0];
+
+          previewMessage = translation ? translation.translatedContent : latestMessage.content;
+        }
+      }
+
+      return {
+        ...conversation,
+        participants,
+        preview: previewMessage,
+        lastActivity: latestMessage?.createdAt || conversation.createdAt,
+      };
+    }),
+  );
+
+  conversations.sort((a, b) => new Date(b.lastActivity).getTime() - new Date(a.lastActivity).getTime());
+
+  return conversations;
+};
+
+const sendMessage = async (userId: string, conversationId: string, content: string, languageId: string | null) => {
+  const user = await getMinUserById(userId);
+  const isUserParticipant = await isParticipant(user.id, conversationId);
+
+  if (!isUserParticipant) {
+    throw new AppError(ChatErrors.NOT_PARTICIPANT);
+  }
+
+  const participants = await getConversationParticipants(conversationId);
+
+  const message = (
+    await db
+      .insert(Messages)
+      .values({
+        conversationId,
+        senderId: user.id,
+        content,
+        originalLanguageId: languageId,
+      })
+      .returning()
+  )[0];
+
+  if (!message) {
+    throw new AppError(GenericErrors.UNEXPECTED_ERROR, { message });
+  }
+
+  for (const participant of participants) {
+    const user = await getMinUserById(participant.userId);
+    if (user.languageId && user.languageId !== languageId) {
+      try {
+        const existingTranslation = (
+          await db
+            .select()
+            .from(MessageTranslations)
+            .where(
+              and(
+                eq(MessageTranslations.messageId, message.id),
+                eq(MessageTranslations.targetLanguageId, user.languageId),
+              ),
+            )
+        )[0];
+
+        if (existingTranslation) {
+          continue;
+        }
+        // TODO: Implement translation
+        const translatedContent = Math.random() > 0.5 ? "Translation" : content;
+
+        await db.insert(MessageTranslations).values({
+          messageId: message.id,
+          targetLanguageId: user.languageId,
+          translatedContent,
+        });
+      } catch (error) {
+        logger.error({ error }, "Transaction error");
+      }
+    }
+  }
+
+  return message;
+};
+
+const getConversationMessages = async (conversationId: string, userId: string) => {
+  const user = await getMinUserById(userId);
+  const isUserParticipant = await isParticipant(userId, conversationId);
+
+  if (!isUserParticipant) {
+    throw new AppError(ChatErrors.NOT_PARTICIPANT);
+  }
+
+  const messages = await db
+    .select()
+    .from(Messages)
+    .where(eq(Messages.conversationId, conversationId))
+    .orderBy(Messages.createdAt);
+
+  const messagesWithTranslations = await Promise.all(
+    messages.map(async (message) => {
+      const sender = await getMinUserById(message.senderId);
+
+      if (message.originalLanguageId === user.languageId || !user.languageId) {
+        return {
+          ...message,
+          sender,
+          displayContent: message.content,
+          isTranslated: false,
+        };
+      }
+
+      const translation = (
+        await db
+          .select()
+          .from(MessageTranslations)
+          .where(
+            and(
+              eq(MessageTranslations.messageId, message.id),
+              eq(MessageTranslations.targetLanguageId, user.languageId),
+            ),
+          )
+      )[0];
+
+      return {
+        ...message,
+        sender,
+        displayContent: translation ? translation.translatedContent : message.content,
+        originalContent: message.content,
+        isTranslated: !!translation,
+      };
+    }),
+  );
+
+  return messagesWithTranslations;
+};
+
+const addParticipantToGroup = async (userId: string, conversationId: string, newParticipantId: string) => {
+  const participant = (
+    await db
+      .select()
+      .from(ConversationParticipants)
+      .where(
+        and(eq(ConversationParticipants.userId, userId), eq(ConversationParticipants.conversationId, conversationId)),
+      )
+  )[0];
+
+  if (!participant) {
+    throw new AppError(ChatErrors.NOT_PARTICIPANT);
+  }
+
+  if (!participant.isAdmin) {
+    throw new AppError(ChatErrors.NOT_ADMIN);
+  }
+
+  const conversation = await getConversationById(conversationId);
+
+  if (!conversation.isGroup) {
+    throw new AppError(ChatErrors.NOT_GROUP);
+  }
+
+  const existingParticipant = (
+    await db
+      .select()
+      .from(ConversationParticipants)
+      .where(
+        and(
+          eq(ConversationParticipants.userId, newParticipantId),
+          eq(ConversationParticipants.conversationId, conversationId),
+        ),
+      )
+  )[0];
+
+  if (existingParticipant) {
+    return await getConversationDetails(conversationId, userId);
+  }
+
+  const newParticipant = await getMinUserById(newParticipantId);
+
+  await db.insert(ConversationParticipants).values({
+    userId: newParticipantId,
+    conversationId,
+    isAdmin: false,
+  });
+
+  return await getConversationDetails(conversationId, userId);
+};
+
+const removeParticipantFromGroup = async (userId: string, conversationId: string, participantIdToRemove: string) => {
+  const participant = (
+    await db
+      .select()
+      .from(ConversationParticipants)
+      .where(
+        and(eq(ConversationParticipants.userId, userId), eq(ConversationParticipants.conversationId, conversationId)),
+      )
+  )[0];
+
+  if (!participant) {
+    throw new AppError(ChatErrors.NOT_PARTICIPANT);
+  }
+
+  if (userId !== participantIdToRemove && !participant.isAdmin) {
+    throw new AppError(ChatErrors.NOT_ADMIN);
+  }
+
+  const conversation = await getConversationById(conversationId);
+
+  if (!conversation.isGroup) {
+    throw new AppError(ChatErrors.NOT_ADMIN);
+  }
+
+  await db
+    .delete(ConversationParticipants)
+    .where(
+      and(
+        eq(ConversationParticipants.userId, participantIdToRemove),
+        eq(ConversationParticipants.conversationId, conversationId),
+      ),
+    );
+
+  if (userId === participantIdToRemove) {
+    return { success: true };
+  }
+
+  return await getConversationDetails(conversationId, userId);
+};
+
+const updateGroupName = async (userId: string, conversationId: string, name: string) => {
+  const participant = (
+    await db
+      .select()
+      .from(ConversationParticipants)
+      .where(
+        and(eq(ConversationParticipants.userId, userId), eq(ConversationParticipants.conversationId, conversationId)),
+      )
+  )[0];
+
+  if (!participant) {
+    throw new AppError(ChatErrors.NOT_PARTICIPANT);
+  }
+
+  if (!participant.isAdmin) {
+    throw new AppError(ChatErrors.NOT_ADMIN);
+  }
+
+  const conversation = await getConversationById(conversationId);
+
+  if (!conversation.isGroup) {
+    throw new AppError(ChatErrors.NOT_GROUP);
+  }
+
+  await db.update(Conversations).set({ name }).where(eq(Conversations.id, conversationId));
+
+  return await getConversationDetails(conversationId, userId);
+};
+
+const makeParticipantAdmin = async (userId: string, conversationId: string, participantId: string) => {
+  const participant = (
+    await db
+      .select()
+      .from(ConversationParticipants)
+      .where(
+        and(eq(ConversationParticipants.userId, userId), eq(ConversationParticipants.conversationId, conversationId)),
+      )
+  )[0];
+
+  if (!participant) {
+    throw new AppError(ChatErrors.NOT_PARTICIPANT);
+  }
+
+  if (!participant.isAdmin) {
+    throw new AppError(ChatErrors.NOT_ADMIN);
+  }
+
+  const conversation = await getConversationById(conversationId);
+
+  if (!conversation.isGroup) {
+    throw new AppError(ChatErrors.NOT_GROUP);
+  }
+
+  await db
+    .update(ConversationParticipants)
+    .set({ isAdmin: true })
+    .where(
+      and(
+        eq(ConversationParticipants.userId, participantId),
+        eq(ConversationParticipants.conversationId, conversationId),
+      ),
+    );
+
+  return await getConversationDetails(conversationId, userId);
+};
+
+const deleteMessage = async (userId: string, messageId: string) => {
+  const message = (await db.select().from(Messages).where(eq(Messages.id, messageId)))[0];
+
+  if (!message) {
+    throw new AppError(ChatErrors.MESSAGE_NOT_FOUND);
+  }
+
+  if (message.senderId !== userId) {
+    const participant = (
+      await db
+        .select()
+        .from(ConversationParticipants)
+        .where(
+          and(
+            eq(ConversationParticipants.userId, userId),
+            eq(ConversationParticipants.conversationId, message.conversationId),
+          ),
+        )
+    )[0];
+
+    if (!participant || !participant.isAdmin) {
+      throw new AppError(ChatErrors.NOT_ADMIN);
+    }
+  }
+
+  await db.delete(MessageTranslations).where(eq(MessageTranslations.messageId, messageId));
+
+  await db.delete(Messages).where(eq(Messages.id, messageId));
+
+  return true;
+};
+
+const leaveConversation = async (userId: string, conversationId: string) => {
+  return await removeParticipantFromGroup(userId, conversationId, userId);
+};
+
+const getMessageTranslation = async (userId: string, messageId: string, languageId: string) => {
+  const message = (await db.select().from(Messages).where(eq(Messages.id, messageId)))[0];
+
+  if (!message) {
+    throw new AppError(ChatErrors.MESSAGE_NOT_FOUND);
+  }
+
+  const isUserParticipant = await isParticipant(userId, message.conversationId);
+
+  if (!isUserParticipant) {
+    throw new AppError(ChatErrors.NOT_PARTICIPANT);
+  }
+
+  if (message.originalLanguageId === languageId) {
+    return {
+      messageId,
+      content: message.content,
+      isTranslated: false,
+    };
+  }
+
+  let translation = (
+    await db
+      .select()
+      .from(MessageTranslations)
+      .where(and(eq(MessageTranslations.messageId, messageId), eq(MessageTranslations.targetLanguageId, languageId)))
+  )[0];
+
+  if (!translation) {
+    try {
+      const translatedContent = await translateText(message.content, message.originalLanguageId, languageId);
+
+      translation = (
+        await db
+          .insert(MessageTranslations)
+          .values({
+            messageId,
+            targetLanguageId: languageId,
+            translatedContent,
+          })
+          .returning()
+      )[0];
+
+      if (!translation) {
+        throw new AppError(GenericErrors.UNEXPECTED_ERROR, { translation });
+      }
+    } catch (error) {
+      return {
+        messageId,
+        content: message.content,
+        isTranslated: false,
+      };
+    }
+  }
+
+  return {
+    messageId,
+    content: translation.translatedContent,
+    isTranslated: true,
+  };
+};
+
+export {
+  createDirectConversation,
+  createGroupConversation,
+  getConversationDetails,
+  getUserConversations,
+  sendMessage,
+  getConversationMessages,
+  addParticipantToGroup,
+  removeParticipantFromGroup,
+  updateGroupName,
+  makeParticipantAdmin,
+  deleteMessage,
+  leaveConversation,
+  getMessageTranslation,
+};

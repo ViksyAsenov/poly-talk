@@ -1,10 +1,10 @@
-import { Request, Response, NextFunction } from 'express';
+import { Request, Response, NextFunction } from "express";
 
-import { AuthErrors } from '@services/auth/constants';
+import { AuthErrors } from "@services/auth/constants";
 
-import { AppError } from '@common/error/appError';
+import { AppError } from "@common/error/appError";
 
-import asyncErrorHandler from '@utils/asyncErrorHandler';
+import asyncErrorHandler from "@utils/asyncErrorHandler";
 
 // eslint-disable-next-line @typescript-eslint/require-await
 const isAuth = asyncErrorHandler(async (req: Request, res: Response, next: NextFunction) => {

@@ -1,1 +1,1 @@
-export * from '@services/auth/constants/errors';
+export * from "@services/auth/constants/errors";

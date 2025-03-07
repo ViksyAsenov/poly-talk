@@ -1,5 +1,5 @@
-import { InferSelectModel } from 'drizzle-orm';
-import { Users } from '@services/user/models';
+import { InferSelectModel } from "drizzle-orm";
+import { Users } from "@services/user/models";
 
 declare global {
   namespace Express {
@@ -10,7 +10,7 @@ declare global {
   }
 }
 
-declare module 'express-session' {
+declare module "express-session" {
   interface SessionData {
     user: InferSelectModel<typeof Users>;
   }

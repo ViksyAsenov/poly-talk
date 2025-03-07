@@ -1,20 +1,20 @@
-import express, { Request } from 'express';
+import express, { Request } from "express";
 
-import http from 'http';
-import cors from 'cors';
-import bodyParser from 'body-parser';
-import { rateLimit } from 'express-rate-limit';
+import http from "http";
+import cors from "cors";
+import bodyParser from "body-parser";
+import { rateLimit } from "express-rate-limit";
 
-import mainRouter from '@routes/index';
+import mainRouter from "@routes/index";
 
-import logger from '@config/logger';
-import config from '@config/env';
-import { sessions } from '@middlewares/sessions';
+import logger from "@config/logger";
+import config from "@config/env";
+import { sessions } from "@middlewares/sessions";
 
 const app = express();
 const server = http.createServer(app);
 
-app.set('trust proxy', 1);
+app.set("trust proxy", 1);
 
 app.use(
   bodyParser.json({
@@ -31,7 +31,7 @@ app.use(
   rateLimit({
     windowMs: 1000,
     limit: 15,
-    standardHeaders: 'draft-7',
+    standardHeaders: "draft-7",
     legacyHeaders: false,
     validate: { xForwardedForHeader: false },
   }),
@@ -53,7 +53,7 @@ function start() {
           ...config.app,
           time: end_ms - start_ms,
         },
-        'Server started successfully',
+        "Server started successfully",
       );
     });
   } catch (error) {
@@ -61,7 +61,7 @@ function start() {
       {
         error,
       },
-      'Server failed to start',
+      "Server failed to start",
     );
   }
 }

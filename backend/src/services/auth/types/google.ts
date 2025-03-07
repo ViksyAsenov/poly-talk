@@ -1,6 +1,6 @@
 interface GoogleLoginParams {
   client_id: string;
-  response_type: 'code';
+  response_type: "code";
   scope: string;
   redirect_uri: string;
 }

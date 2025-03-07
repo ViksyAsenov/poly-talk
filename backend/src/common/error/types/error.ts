@@ -1,4 +1,4 @@
-import { ServiceType } from '@common/constants/serviceType';
+import { ServiceType } from "@common/constants/serviceType";
 
 interface IAppErrorWithoutService {
   message_error: string;
