@@ -4,6 +4,9 @@ import { IAppError } from "@common/error/types";
 enum USER_ERROR_KEYS {
   NOT_FOUND = "NOT_FOUND",
   INVALID_TAG = "INVALID_TAG",
+  INVALID_DISPLAY_NAME = "INVALID_DISPLAY_NAME",
+  INVALID_NAME = "INVALID_NAME",
+  INVALID_LANGUAGE = "INVALID_LANGUAGE",
   CANNOT_FRIEND_SELF = "CANNOT_FRIEND_SELF",
   ALREADY_FRIENDS = "ALREADY_FRIENDS",
   REQUEST_ALREADY_SENT = "REQUEST_ALREADY_SENT",
@@ -20,6 +23,21 @@ const UserErrors: Record<USER_ERROR_KEYS, IAppError> = {
   },
   [USER_ERROR_KEYS.INVALID_TAG]: {
     message_error: "This is an invalid tag.",
+    status_code: 400,
+    service: ServiceType.USER,
+  },
+  [USER_ERROR_KEYS.INVALID_DISPLAY_NAME]: {
+    message_error: "This is an invalid display name.",
+    status_code: 400,
+    service: ServiceType.USER,
+  },
+  [USER_ERROR_KEYS.INVALID_NAME]: {
+    message_error: "This is an invalid name.",
+    status_code: 400,
+    service: ServiceType.USER,
+  },
+  [USER_ERROR_KEYS.INVALID_LANGUAGE]: {
+    message_error: "This is an invalid language.",
     status_code: 400,
     service: ServiceType.USER,
   },

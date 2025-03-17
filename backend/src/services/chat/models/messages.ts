@@ -2,6 +2,7 @@ import { pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
 import { Conversations } from "./conversations";
 import { Users } from "@services/user/models";
 import { Languages } from "@services/language/models";
+import { InferSelectModel } from "drizzle-orm";
 
 const Messages = pgTable("messages", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -14,10 +15,6 @@ const Messages = pgTable("messages", {
   content: text("content").notNull(),
   originalLanguageId: uuid("original_language_id").references(() => Languages.id),
   createdAt: timestamp("created_at").notNull().defaultNow(),
-  updatedAt: timestamp("updated_at")
-    .notNull()
-    .defaultNow()
-    .$onUpdate(() => new Date()),
 });
 
 const MessageTranslations = pgTable("message_translations", {
@@ -30,10 +27,8 @@ const MessageTranslations = pgTable("message_translations", {
     .notNull(),
   translatedContent: text("translated_content").notNull(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
-  updatedAt: timestamp("updated_at")
-    .notNull()
-    .defaultNow()
-    .$onUpdate(() => new Date()),
 });
+
+export type Message = InferSelectModel<typeof Messages>;
 
 export { Messages, MessageTranslations };

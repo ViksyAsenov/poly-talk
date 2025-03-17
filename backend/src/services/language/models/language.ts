@@ -5,7 +5,6 @@ const Languages = pgTable("languages", {
   id: uuid("id").primaryKey().defaultRandom(),
   code: varchar("code", { length: 2 }).notNull(),
   name: varchar("name", { length: 255 }).notNull(),
-  nativeSpeakers: integer("native_speakers").notNull(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 

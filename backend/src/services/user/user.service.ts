@@ -92,8 +92,8 @@ const getOrCreateUserWithGoogle = async (profile: GoogleUser) => {
     updateObject.avatar = profile.picture;
   }
 
-  if (!customizedFields.includes("displayName")) {
-    updateObject.displayName = profile.name;
+  if (!foundUser) {
+    updateObject.displayName = profile.name.split(" ").join("").toLowerCase();
   }
 
   if (!customizedFields.includes("firstName")) {
@@ -117,6 +117,10 @@ const updateUserProfile = async (userId: string, profileData: Partial<NewUser>) 
   }
 
   const customizedFields = [...foundUser.customizedFields];
+
+  if (profileData.languageId) {
+    await getLanguageById(profileData.languageId, true);
+  }
 
   Object.keys(profileData).forEach((field) => {
     if (!customizedFields.includes(field)) {
@@ -386,7 +390,6 @@ export {
   getMinUserById,
   getOrCreateUserWithGoogle,
   updateUserProfile,
-  getUserByTag,
   sendFriendRequest,
   getFriendRequests,
   acceptFriendRequest,

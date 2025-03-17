@@ -32,6 +32,12 @@ const config = convict({
       default: "http://localhost:3000",
       env: "APP_URL",
     },
+    libretranslate_url: {
+      doc: "The URL of the LibreTranslate API.",
+      format: "url",
+      default: "http://localhost:5000",
+      env: "LIBRETRANSLATE_URL",
+    },
     version: {
       doc: "The version of the application.",
       format: String,
@@ -78,14 +84,6 @@ const config = convict({
       format: String,
       default: "",
       env: "DB_PASSWORD",
-    },
-  },
-  redis: {
-    url: {
-      doc: "The URL of the Redis server.",
-      format: String,
-      default: "redis://localhost:6379",
-      env: "REDIS_URL",
     },
   },
   auth: {

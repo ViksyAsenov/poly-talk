@@ -20,8 +20,21 @@ const generateLanguageMap = () => {
   return languageMap;
 };
 
-const seedLanguages = async () => {
-  const languageMap = generateLanguageMap();
+const seedLanguages = async (allLanguages = false) => {
+  const languageMap = allLanguages
+    ? generateLanguageMap()
+    : {
+        English: "en",
+        French: "fr",
+        Spanish: "es",
+        German: "de",
+        Italian: "it",
+        Portuguese: "pt",
+        Russian: "ru",
+        Japanese: "ja",
+        Chinese: "zh",
+        Bulgarian: "bg",
+      };
 
   for (const [name, code] of Object.entries(languageMap)) {
     const existingLanguage = (await db.select().from(Languages).where(eq(Languages.code, code)))[0];
