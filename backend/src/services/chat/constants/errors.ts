@@ -7,9 +7,12 @@ enum CHAT_ERROR_KEYS {
   MESSAGE_NOT_FOUND = "MESSAGE_NOT_FOUND",
   NOT_FRIENDS = "NOT_FRIENDS",
   INVALID_GROUP_DATA = "INVALID_GROUP_DATA",
+  INVALID_MESSAGE_DATA = "INVALID_MESSAGE_DATA",
+  INVALID_PARTICIPANT_DATA = "INVALID_PARTICIPANT_DATA",
   CANNOT_MESSAGE_SELF = "CANNOT_MESSAGE_SELF",
   NOT_ADMIN = "NOT_ADMIN",
   NOT_GROUP = "NOT_GROUP",
+  DUPLICATE_PARTICIPANTS = "DUPLICATE_PARTICIPANTS",
 }
 
 const ChatErrors: Record<CHAT_ERROR_KEYS, IAppError> = {
@@ -38,6 +41,16 @@ const ChatErrors: Record<CHAT_ERROR_KEYS, IAppError> = {
     status_code: 400,
     service: ServiceType.CHAT,
   },
+  [CHAT_ERROR_KEYS.INVALID_MESSAGE_DATA]: {
+    message_error: "The provided message data is invalid.",
+    status_code: 400,
+    service: ServiceType.CHAT,
+  },
+  [CHAT_ERROR_KEYS.INVALID_PARTICIPANT_DATA]: {
+    message_error: "The provided participant data is invalid.",
+    status_code: 400,
+    service: ServiceType.CHAT,
+  },
   [CHAT_ERROR_KEYS.CANNOT_MESSAGE_SELF]: {
     message_error: "Users cannot message themselves.",
     status_code: 400,
@@ -50,6 +63,11 @@ const ChatErrors: Record<CHAT_ERROR_KEYS, IAppError> = {
   },
   [CHAT_ERROR_KEYS.NOT_GROUP]: {
     message_error: "Chat is not a group chat.",
+    status_code: 400,
+    service: ServiceType.CHAT,
+  },
+  [CHAT_ERROR_KEYS.DUPLICATE_PARTICIPANTS]: {
+    message_error: "The participants list contains duplicates.",
     status_code: 400,
     service: ServiceType.CHAT,
   },

@@ -79,7 +79,7 @@ const createDirectConversation = async (userId: string, otherUserId: string) => 
       const otherParticipant = participants.find((participant) => participant.userId !== userId);
 
       if (otherParticipant && otherParticipant.userId === otherUserId) {
-        return await getConversationDetails(conversations.id, userId);
+        return await getConversationDetails(userId, conversations.id);
       }
     }
   }
@@ -114,17 +114,35 @@ const createDirectConversation = async (userId: string, otherUserId: string) => 
     },
   ]);
 
-  return await getConversationDetails(conversation.id, userId);
+  return await getConversationDetails(userId, conversation.id);
 };
 
-const createGroupConversation = async (userId: string, groupData: { name: string; participantIds: string[] }) => {
+const hasDuplicateIds = (participantIds: string[]) => {
+  const idSet = new Set<string>();
+
+  for (const participantId of participantIds) {
+    if (idSet.has(participantId)) {
+      return true;
+    }
+
+    idSet.add(participantId);
+  }
+
+  return false;
+};
+
+const createGroupConversation = async (userId: string, name: string, participantIds: string[]) => {
+  if (hasDuplicateIds(participantIds)) {
+    throw new AppError(ChatErrors.DUPLICATE_PARTICIPANTS);
+  }
+
   const user = await getMinUserById(userId);
 
   const conversation = (
     await db
       .insert(Conversations)
       .values({
-        name: groupData.name,
+        name,
         isGroup: true,
       })
       .returning()
@@ -140,9 +158,13 @@ const createGroupConversation = async (userId: string, groupData: { name: string
     isAdmin: true,
   });
 
-  for (const participantId of groupData.participantIds) {
+  for (const participantId of participantIds) {
     if (participantId !== userId) {
       const participant = await getMinUserById(participantId);
+
+      if (!areFriends(userId, participantId)) {
+        throw new AppError(ChatErrors.NOT_FRIENDS);
+      }
 
       await db.insert(ConversationParticipants).values({
         userId: participant.id,
@@ -152,10 +174,10 @@ const createGroupConversation = async (userId: string, groupData: { name: string
     }
   }
 
-  return await getConversationDetails(conversation.id, userId);
+  return await getConversationDetails(userId, conversation.id);
 };
 
-const getConversationDetails = async (conversationId: string, userId: string): Promise<ConversationData> => {
+const getConversationDetails = async (userId: string, conversationId: string): Promise<ConversationData> => {
   const isUserParticipant = await isParticipant(userId, conversationId);
 
   if (!isUserParticipant) {
@@ -166,12 +188,9 @@ const getConversationDetails = async (conversationId: string, userId: string): P
 
   const participants = await getConversationParticipants(conversationId);
 
-  const messages = await getConversationMessages(conversationId, userId);
-
   return {
     ...conversation,
     participants,
-    messages,
   };
 };
 
@@ -230,12 +249,7 @@ const getUserConversations = async (userId: string) => {
   return conversations;
 };
 
-const sendMessage = async (
-  userId: string,
-  conversationId: string,
-  content: string,
-  languageId: string | null,
-): Promise<MessageData> => {
+const sendMessage = async (userId: string, conversationId: string, content: string): Promise<MessageData> => {
   const user = await getMinUserById(userId);
   const isUserParticipant = await isParticipant(user.id, conversationId);
 
@@ -252,7 +266,7 @@ const sendMessage = async (
         conversationId,
         senderId: user.id,
         content,
-        originalLanguageId: languageId,
+        originalLanguageId: user.languageId,
       })
       .returning()
   )[0];
@@ -274,7 +288,7 @@ const sendMessage = async (
       createdAt: message.createdAt,
     };
 
-    if (participantData.languageId && participantData.languageId !== languageId) {
+    if (participantData.languageId && participantData.languageId !== user.languageId) {
       try {
         const existingTranslation = (
           await db
@@ -295,7 +309,7 @@ const sendMessage = async (
           const translatedContent = await translateMessage(
             message.content,
             participantData.languageId,
-            languageId ?? undefined,
+            user.languageId ?? undefined,
           );
 
           const translation = (
@@ -383,7 +397,7 @@ const getMessageTranslation = async (userId: string, message: Message, languageI
   };
 };
 
-const getConversationMessages = async (conversationId: string, userId: string): Promise<MessageData[]> => {
+const getConversationMessages = async (userId: string, conversationId: string): Promise<MessageData[]> => {
   const user = await getMinUserById(userId);
   const isUserParticipant = await isParticipant(userId, conversationId);
 
@@ -430,7 +444,7 @@ const getConversationMessages = async (conversationId: string, userId: string): 
   return messagesWithTranslations;
 };
 
-const addParticipantToGroup = async (userId: string, conversationId: string, newParticipantId: string) => {
+const addParticipantToGroupConversation = async (userId: string, conversationId: string, newParticipantId: string) => {
   const participant = (
     await db
       .select()
@@ -467,10 +481,14 @@ const addParticipantToGroup = async (userId: string, conversationId: string, new
   )[0];
 
   if (existingParticipant) {
-    return await getConversationDetails(conversationId, userId);
+    return await getConversationDetails(userId, conversationId);
   }
 
   const newParticipant = await getMinUserById(newParticipantId);
+
+  if (!areFriends(userId, newParticipantId)) {
+    throw new AppError(ChatErrors.NOT_FRIENDS);
+  }
 
   await db.insert(ConversationParticipants).values({
     userId: newParticipant.id,
@@ -478,10 +496,14 @@ const addParticipantToGroup = async (userId: string, conversationId: string, new
     isAdmin: false,
   });
 
-  return await getConversationDetails(conversationId, userId);
+  return await getConversationDetails(userId, conversationId);
 };
 
-const removeParticipantFromGroup = async (userId: string, conversationId: string, participantIdToRemove: string) => {
+const removeParticipantFromGroupConversation = async (
+  userId: string,
+  conversationId: string,
+  participantIdToRemove: string,
+) => {
   const participant = (
     await db
       .select()
@@ -502,7 +524,7 @@ const removeParticipantFromGroup = async (userId: string, conversationId: string
   const conversation = await getConversationById(conversationId);
 
   if (!conversation.isGroup) {
-    throw new AppError(ChatErrors.NOT_ADMIN);
+    throw new AppError(ChatErrors.NOT_GROUP);
   }
 
   await db
@@ -518,10 +540,10 @@ const removeParticipantFromGroup = async (userId: string, conversationId: string
     return true;
   }
 
-  return await getConversationDetails(conversationId, userId);
+  return await getConversationDetails(userId, conversationId);
 };
 
-const updateGroupName = async (userId: string, conversationId: string, name: string) => {
+const updateGroupConversationName = async (userId: string, conversationId: string, name: string) => {
   const participant = (
     await db
       .select()
@@ -547,10 +569,10 @@ const updateGroupName = async (userId: string, conversationId: string, name: str
 
   await db.update(Conversations).set({ name }).where(eq(Conversations.id, conversationId));
 
-  return await getConversationDetails(conversationId, userId);
+  return await getConversationDetails(userId, conversationId);
 };
 
-const makeParticipantAdmin = async (userId: string, conversationId: string, participantId: string) => {
+const makeGroupConversationParticipantAdmin = async (userId: string, conversationId: string, participantId: string) => {
   const participant = (
     await db
       .select()
@@ -584,7 +606,7 @@ const makeParticipantAdmin = async (userId: string, conversationId: string, part
       ),
     );
 
-  return await getConversationDetails(conversationId, userId);
+  return await getConversationDetails(userId, conversationId);
 };
 
 const deleteMessage = async (userId: string, messageId: string) => {
@@ -615,12 +637,10 @@ const deleteMessage = async (userId: string, messageId: string) => {
   await db.delete(MessageTranslations).where(eq(MessageTranslations.messageId, messageId));
 
   await db.delete(Messages).where(eq(Messages.id, messageId));
-
-  return true;
 };
 
-const leaveConversation = async (userId: string, conversationId: string) => {
-  return await removeParticipantFromGroup(userId, conversationId, userId);
+const leaveGroupConversation = async (userId: string, conversationId: string) => {
+  await removeParticipantFromGroupConversation(userId, conversationId, userId);
 };
 
 export {
@@ -630,10 +650,10 @@ export {
   getUserConversations,
   sendMessage,
   getConversationMessages,
-  addParticipantToGroup,
-  removeParticipantFromGroup,
-  updateGroupName,
-  makeParticipantAdmin,
+  addParticipantToGroupConversation,
+  removeParticipantFromGroupConversation,
+  updateGroupConversationName,
+  makeGroupConversationParticipantAdmin,
   deleteMessage,
-  leaveConversation,
+  leaveGroupConversation,
 };
