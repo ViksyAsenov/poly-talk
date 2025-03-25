@@ -1,6 +1,6 @@
 {
-  "name": "polytalk-api",
-  "version": "1.0.0",
+  "name": "polytalk-backend",
+  "version": "4.2.0",
   "main": "./src/index.ts",
   "author": "Viktor Asenov",
   "scripts": {

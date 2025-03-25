@@ -1,4 +1,3 @@
-import { MessageData } from "@services/chat/types/messageData";
 import { ParticipantData } from "@services/chat/types/participantData";
 
 interface ConversationData {
@@ -8,6 +7,8 @@ interface ConversationData {
   isGroup: boolean;
   createdAt: Date;
   updatedAt: Date;
+  preview: string | null;
+  lastActivity: Date;
 }
 
 export { ConversationData };

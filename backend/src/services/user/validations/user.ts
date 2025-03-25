@@ -7,6 +7,7 @@ const updateUserBodyValidation = z.object({
   displayName: z
     .string({ message: createZodMessage(UserErrors.INVALID_DISPLAY_NAME) })
     .min(1, { message: createZodMessage(UserErrors.INVALID_DISPLAY_NAME) })
+    .regex(/^[a-zA-Z0-9 ]+$/, { message: createZodMessage(UserErrors.INVALID_DISPLAY_NAME) })
     .optional(),
   firstName: z
     .string({ message: createZodMessage(UserErrors.INVALID_NAME) })

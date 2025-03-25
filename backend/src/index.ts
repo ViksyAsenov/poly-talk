@@ -10,6 +10,7 @@ import mainRouter from "@routes/index";
 import logger from "@config/logger";
 import config from "@config/env";
 import { sessions } from "@middlewares/sessions";
+import { setupWS } from "@config/socket";
 
 const app = express();
 const server = http.createServer(app);
@@ -25,7 +26,12 @@ app.use(
 );
 app.use(bodyParser.urlencoded({ extended: true }));
 
-app.use(cors());
+app.use(
+  cors({
+    origin: config.app.client_url,
+    credentials: true,
+  }),
+);
 
 app.use(
   rateLimit({
@@ -47,6 +53,8 @@ function start() {
 
     server.listen(config.app.port, () => {
       const end_ms = Date.now();
+
+      setupWS(server, app);
 
       logger.info(
         {

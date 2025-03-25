@@ -13,9 +13,7 @@ function asyncErrorHandler(fn: ExpressFunction) {
           success: false,
           error: {
             message_error: error.message_error,
-            ...(!error.notify && {
-              notify: false,
-            }),
+            notify: error.notify,
           },
         });
       }

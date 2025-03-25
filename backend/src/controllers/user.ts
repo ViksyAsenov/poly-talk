@@ -13,7 +13,7 @@ import {
 
 import asyncErrorHandler from "@utils/asyncErrorHandler";
 import { TUuidParamsOrBody } from "@common/validations/uuidParamsOrBody";
-import { TTagParams } from "@services/user/validations/friend";
+import { TTagBody } from "@services/user/validations/friend";
 import { TUpdateUserBody } from "@services/user/validations/user";
 
 const getUser = asyncErrorHandler(async (req: Request, res: Response) => {
@@ -30,7 +30,7 @@ const updateUser = asyncErrorHandler(async (req: Request, res: Response) => {
 });
 
 const sendFriendRequest = asyncErrorHandler(async (req: Request, res: Response) => {
-  const { tag } = req.params as TTagParams;
+  const { tag } = req.body as TTagBody;
   const request = await sendFriendRequestService(req.user.id, tag);
 
   res.json({ success: true, data: request });

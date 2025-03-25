@@ -11,8 +11,10 @@ import { GenericErrors } from "@common/constants/error";
 const generateUserTag = async (username: string) => {
   let tag;
 
+  const cleanedUsername = username.replace(/[^a-zA-Z0-9]/g, "");
+
   do {
-    tag = `${username.toLowerCase()}#${String(Math.floor(1000 + Math.random() * 9000))}`;
+    tag = `${cleanedUsername.toLowerCase()}#${String(Math.floor(1000 + Math.random() * 9000))}`;
   } while ((await db.select().from(Users).where(eq(Users.tag, tag))).length > 0);
 
   return tag;
@@ -116,13 +118,29 @@ const updateUserProfile = async (userId: string, profileData: Partial<NewUser>) 
     throw new AppError(UserErrors.NOT_FOUND);
   }
 
+  const fieldsToUpdate: Partial<NewUser> = {};
+
   const customizedFields = [...foundUser.customizedFields];
 
   if (profileData.languageId) {
     await getLanguageById(profileData.languageId, true);
+    fieldsToUpdate.languageId = profileData.languageId;
   }
 
-  Object.keys(profileData).forEach((field) => {
+  if (profileData.displayName) {
+    fieldsToUpdate.displayName = profileData.displayName;
+    fieldsToUpdate.tag = await generateUserTag(profileData.displayName);
+  }
+
+  if (profileData.firstName) {
+    fieldsToUpdate.firstName = profileData.firstName;
+  }
+
+  if (profileData.lastName) {
+    fieldsToUpdate.lastName = profileData.lastName;
+  }
+
+  Object.keys(fieldsToUpdate).forEach((field) => {
     if (!customizedFields.includes(field)) {
       customizedFields.push(field);
     }
@@ -131,7 +149,7 @@ const updateUserProfile = async (userId: string, profileData: Partial<NewUser>) 
   await db
     .update(Users)
     .set({
-      ...profileData,
+      ...fieldsToUpdate,
       customizedFields,
     })
     .where(eq(Users.id, userId));
@@ -140,17 +158,11 @@ const updateUserProfile = async (userId: string, profileData: Partial<NewUser>) 
 };
 
 const getUserByTag = async (userTag: string): Promise<IMinUser> => {
-  const [username, tag] = userTag.split("#");
-
-  if (!username || !tag) {
-    throw new AppError(UserErrors.INVALID_TAG);
-  }
-
   const user = (
     await db
       .select()
       .from(Users)
-      .where(and(eq(Users.tag, tag)))
+      .where(and(eq(Users.tag, userTag)))
   )[0];
 
   if (!user) {
@@ -174,7 +186,7 @@ const sendFriendRequest = async (userId: string, receiverTag: string) => {
       .where(
         or(
           and(eq(Friends.userId, userId), eq(Friends.friendId, receiver.id)),
-          and(eq(Friends.friendId, receiver.id), eq(Friends.userId, userId)),
+          and(eq(Friends.userId, receiver.id), eq(Friends.friendId, userId)),
         ),
       )
   )[0];
@@ -328,13 +340,13 @@ const rejectFriendRequest = async (userId: string, requestId: string) => {
 
 const getFriends = async (userId: string) => {
   const friendships = await db
-    .select()
+    .selectDistinct()
     .from(Friends)
     .where(or(eq(Friends.userId, userId), eq(Friends.friendId, userId)));
 
-  const friendIds = friendships
-    .filter((friendship) => friendship.friendId !== userId)
-    .map((friendship) => friendship.friendId);
+  const friendIds = friendships.map((friendship) =>
+    friendship.friendId === userId ? friendship.userId : friendship.friendId,
+  );
 
   const friends = await Promise.all(friendIds.map((friendId) => getMinUserById(friendId ?? "")));
 

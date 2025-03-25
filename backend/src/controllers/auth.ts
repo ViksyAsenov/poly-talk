@@ -1,4 +1,4 @@
-import { Request, Response } from "express";
+import { NextFunction, Request, Response } from "express";
 import config from "@config/env";
 
 import { getGoogleLoginUrl as getGoogleLoginUrlService, validateAndGetUser } from "@services/auth";
@@ -7,9 +7,9 @@ import asyncErrorHandler from "src/utils/asyncErrorHandler";
 import logger from "@config/logger";
 
 const getGoogleLoginUrl = asyncErrorHandler((req: Request, res: Response) => {
-  const steamLoginUrl = getGoogleLoginUrlService();
+  const googleLoginUrl = getGoogleLoginUrlService();
 
-  res.json({ success: true, data: steamLoginUrl });
+  res.json({ success: true, data: googleLoginUrl });
 });
 
 const handleGoogleCallback = asyncErrorHandler(async (req: Request, res: Response) => {
@@ -32,4 +32,15 @@ const handleGoogleCallback = asyncErrorHandler(async (req: Request, res: Respons
   }
 });
 
-export { getGoogleLoginUrl, handleGoogleCallback };
+const logout = asyncErrorHandler((req: Request, res: Response, next: NextFunction) => {
+  req.session.destroy((err) => {
+    if (err) next(err);
+
+    res.json({
+      success: true,
+      data: null,
+    });
+  });
+});
+
+export { getGoogleLoginUrl, handleGoogleCallback, logout };

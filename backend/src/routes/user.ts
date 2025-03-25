@@ -11,7 +11,7 @@ import {
   removeFriend,
 } from "@controllers/user";
 import { validateBodySchema, validateParamsSchema } from "@middlewares/validation";
-import { tagParamsValidation } from "@services/user/validations/friend";
+import { tagBodyValidation } from "@services/user/validations/friend";
 import { uuidParamsOrBodyValidation } from "@common/validations/uuidParamsOrBody";
 import { updateUserBodyValidation } from "@services/user/validations/user";
 
@@ -21,7 +21,7 @@ router.get("/me", isAuth, getUser);
 
 router.patch("/me", isAuth, validateBodySchema(updateUserBodyValidation), updateUser);
 
-router.post("/friends/:tag", isAuth, validateParamsSchema(tagParamsValidation), sendFriendRequest);
+router.post("/friends", isAuth, validateBodySchema(tagBodyValidation), sendFriendRequest);
 
 router.get("/friends/requests", isAuth, getFriendRequests);
 

@@ -184,17 +184,51 @@ const getConversationDetails = async (userId: string, conversationId: string): P
     throw new AppError(ChatErrors.NOT_PARTICIPANT);
   }
 
+  const user = await getMinUserById(userId);
+
   const conversation = await getConversationById(conversationId);
 
   const participants = await getConversationParticipants(conversationId);
 
+  const latestMessage = (
+    await db
+      .select()
+      .from(Messages)
+      .where(eq(Messages.conversationId, conversation.id))
+      .orderBy(desc(Messages.createdAt))
+      .limit(1)
+  )[0];
+
+  let previewMessage = null;
+  if (latestMessage) {
+    if (!user.languageId) {
+      previewMessage = latestMessage.content;
+    } else {
+      const translation = (
+        await db
+          .select()
+          .from(MessageTranslations)
+          .where(
+            and(
+              eq(MessageTranslations.messageId, latestMessage.id),
+              eq(MessageTranslations.targetLanguageId, user.languageId),
+            ),
+          )
+      )[0];
+
+      previewMessage = translation ? translation.translatedContent : latestMessage.content;
+    }
+  }
+
   return {
     ...conversation,
     participants,
+    lastActivity: latestMessage?.createdAt || conversation.createdAt,
+    preview: previewMessage,
   };
 };
 
-const getUserConversations = async (userId: string) => {
+const getUserConversations = async (userId: string): Promise<ConversationData[]> => {
   const user = await getMinUserById(userId);
 
   const participants = await db
@@ -246,7 +280,13 @@ const getUserConversations = async (userId: string) => {
 
   conversations.sort((a, b) => new Date(b.lastActivity).getTime() - new Date(a.lastActivity).getTime());
 
-  return conversations;
+  const conversationWithParticipants: ConversationData[] = [];
+  for (const conversation of conversations) {
+    const participants = await getConversationParticipants(conversation.id);
+    conversationWithParticipants.push({ ...conversation, participants });
+  }
+
+  return conversationWithParticipants;
 };
 
 const sendMessage = async (userId: string, conversationId: string, content: string): Promise<MessageData> => {
@@ -258,6 +298,17 @@ const sendMessage = async (userId: string, conversationId: string, content: stri
   }
 
   const participants = await getConversationParticipants(conversationId);
+
+  const conversation = await getConversationById(conversationId);
+  if (!conversation.isGroup) {
+    const otherParticipant = participants.find((participant) => participant.user.id !== userId);
+
+    logger.info({ otherParticipant }, "Other participant");
+
+    if (otherParticipant && !(await areFriends(userId, otherParticipant.user.id))) {
+      throw new AppError(ChatErrors.NOT_FRIENDS);
+    }
+  }
 
   const message = (
     await db
@@ -384,6 +435,7 @@ const getMessageTranslation = async (userId: string, message: Message, languageI
         throw new AppError(GenericErrors.UNEXPECTED_ERROR, { translation });
       }
     } catch (error) {
+      logger.error({ error }, "Translation error");
       return {
         content: message.content,
         isTranslated: false,
@@ -647,6 +699,7 @@ export {
   createDirectConversation,
   createGroupConversation,
   getConversationDetails,
+  isParticipant,
   getUserConversations,
   sendMessage,
   getConversationMessages,

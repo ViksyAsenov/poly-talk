@@ -14,7 +14,7 @@ import {
   deleteMessage,
   leaveGroupConversation,
 } from "@controllers/chat";
-import { validateBodySchema } from "@middlewares/validation";
+import { validateBodySchema, validateParamsSchema } from "@middlewares/validation";
 import { uuidParamsOrBodyValidation } from "@common/validations/uuidParamsOrBody";
 import {
   createGroupConversationBodyValidation,
@@ -32,7 +32,7 @@ router.get("/conversation/:id", isAuth, validateBodySchema(uuidParamsOrBodyValid
 router.get(
   "/conversation/:id/messages",
   isAuth,
-  validateBodySchema(uuidParamsOrBodyValidation),
+  validateParamsSchema(uuidParamsOrBodyValidation),
   getConversationMessages,
 );
 
@@ -66,8 +66,8 @@ router.put(
   makeGroupConversationParticipantAdmin,
 );
 
-router.delete(
-  "/conversation/group/participant",
+router.post(
+  "/conversation/group/participant/kick",
   isAuth,
   validateBodySchema(updateGroupConversationParticipantBodyValidation),
   removeParticipantFromGroupConversation,

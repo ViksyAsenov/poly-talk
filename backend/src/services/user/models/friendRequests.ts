@@ -23,6 +23,6 @@ const FriendRequests = pgTable("friend_requests", {
 type FriendRequest = InferSelectModel<typeof FriendRequests>;
 type NewFriendRequest = InferInsertModel<typeof FriendRequests>;
 
-export { FriendRequests };
-
 export type { FriendRequest, NewFriendRequest };
+
+export { FriendRequests, FriendRequestStatusEnum };

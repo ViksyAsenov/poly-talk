@@ -20,7 +20,7 @@ const generateLanguageMap = () => {
   return languageMap;
 };
 
-const seedLanguages = async (allLanguages = false) => {
+const seedLanguages = async (allLanguages: boolean) => {
   const languageMap = allLanguages
     ? generateLanguageMap()
     : {
@@ -48,7 +48,6 @@ const seedLanguages = async (allLanguages = false) => {
     const newLanguage: NewLanguage = {
       name,
       code,
-      nativeSpeakers: 0,
     };
 
     await db.insert(Languages).values(newLanguage);
