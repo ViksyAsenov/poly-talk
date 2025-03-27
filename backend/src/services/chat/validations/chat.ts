@@ -7,9 +7,7 @@ const createGroupConversationBodyValidation = z.object({
   name: z
     .string({ message: createZodMessage(ChatErrors.INVALID_GROUP_DATA) })
     .min(1, { message: createZodMessage(ChatErrors.INVALID_GROUP_DATA) }),
-  participantIds: z
-    .array(z.string({ message: createZodMessage(ChatErrors.INVALID_GROUP_DATA) }))
-    .min(3, { message: createZodMessage(ChatErrors.INVALID_GROUP_DATA) }),
+  participantIds: z.string({ message: createZodMessage(ChatErrors.INVALID_GROUP_DATA) }).array(),
 });
 
 const sendMessageBodyValidation = z.object({

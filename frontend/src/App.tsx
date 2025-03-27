@@ -7,7 +7,7 @@ import Settings from "./components/Settings";
 import Friends from "./components/Friends";
 
 export const App = () => {
-  const { isAuthenticated, checkAuth } = useUserStore();
+  const { isAuthenticated, checkAuth, fetchLanguages } = useUserStore();
   const [currentPage, setCurrentPage] = useState<
     "chat" | "friends" | "settings"
   >("chat");
@@ -17,11 +17,12 @@ export const App = () => {
     const load = async () => {
       setIsLoading(true);
       await checkAuth();
+      await fetchLanguages();
       setIsLoading(false);
     };
 
     load();
-  }, [checkAuth]);
+  }, [checkAuth, fetchLanguages]);
 
   if (isLoading) {
     return (

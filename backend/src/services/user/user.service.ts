@@ -123,8 +123,11 @@ const updateUserProfile = async (userId: string, profileData: Partial<NewUser>) 
   const customizedFields = [...foundUser.customizedFields];
 
   if (profileData.languageId) {
-    await getLanguageById(profileData.languageId, true);
-    fieldsToUpdate.languageId = profileData.languageId;
+    fieldsToUpdate.languageId = profileData.languageId === "none" ? null : profileData.languageId;
+
+    if (fieldsToUpdate.languageId) {
+      await getLanguageById(fieldsToUpdate.languageId, true);
+    }
   }
 
   if (profileData.displayName) {

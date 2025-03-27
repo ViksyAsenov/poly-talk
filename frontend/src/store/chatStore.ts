@@ -13,6 +13,7 @@ interface ChatState {
   fetchConversations: () => Promise<void>;
   fetchMessages: (conversationId: string) => Promise<void>;
 
+  addMessage: (conversationId: string, message: Message) => void;
   sendMessage: (conversationId: string, content: string) => Promise<void>;
   deleteMessage: (messageId: string) => Promise<void>;
 }
@@ -45,27 +46,24 @@ export const useChatStore = create<ChatState>((set, get) => ({
     }
   },
 
+  addMessage: (conversationId, message) => {
+    set((state) => ({
+      messages: [...state.messages, message],
+      conversations: state.conversations.map((conversation) => {
+        if (conversation.id === conversationId) {
+          return {
+            ...conversation,
+            lastActivity: new Date(),
+            preview: message.displayContent,
+          };
+        }
+
+        return conversation;
+      }),
+    }));
+  },
   sendMessage: async (conversationId, content) => {
-    const response = await chatApi.sendMessage({ conversationId, content });
-
-    const { success, data } = response.data;
-
-    if (success) {
-      set((state) => ({
-        messages: [...state.messages, data],
-        conversations: state.conversations.map((conversation) => {
-          if (conversation.id === conversationId) {
-            return {
-              ...conversation,
-              lastActivity: new Date(),
-              preview: data.displayContent,
-            };
-          }
-
-          return conversation;
-        }),
-      }));
-    }
+    await chatApi.sendMessage({ conversationId, content });
   },
   deleteMessage: async (messageId) => {
     const response = await chatApi.deleteMessage(messageId);

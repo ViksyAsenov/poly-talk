@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { authApi, userApi } from "../api/client";
-import { IFriendRequests, IMinUser } from "../types/user";
+import { IFriendRequests, IMinUser, Language } from "../types/user";
 import toast from "react-hot-toast";
 
 interface UserState {
@@ -8,6 +8,7 @@ interface UserState {
   isAuthenticated: boolean;
   friends: IMinUser[];
   pendingFriendRequests: IFriendRequests;
+  languages: Language[];
 
   updateUser: (
     displayName?: string,
@@ -24,6 +25,8 @@ interface UserState {
   rejectFriendRequest: (id: string) => Promise<void>;
   removeFriend: (id: string) => Promise<void>;
 
+  fetchLanguages: () => Promise<void>;
+
   checkAuth: () => Promise<void>;
   loginWithGoogle: () => Promise<void>;
 }
@@ -33,6 +36,7 @@ const useUserStore = create<UserState>((set, get) => ({
   isAuthenticated: false,
   friends: [],
   pendingFriendRequests: { sent: [], received: [] },
+  languages: [],
 
   updateUser: async (displayName, firstName, lastName, languageId) => {
     const response = await userApi.updateMe(
@@ -109,6 +113,15 @@ const useUserStore = create<UserState>((set, get) => ({
       await get().fetchPendingFriendRequests();
 
       toast.success("Friend removed successfully");
+    }
+  },
+
+  fetchLanguages: async () => {
+    const response = await userApi.getLanguages();
+    const { success, data } = response.data;
+
+    if (success) {
+      set({ languages: data });
     }
   },
 

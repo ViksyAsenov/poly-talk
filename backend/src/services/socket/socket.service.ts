@@ -35,8 +35,10 @@ const setupServerListeners = (io: Server) => {
     }
 
     socket.on("room", async ({ id, type }: Room) => {
+      logger.trace(`Room event ${type} for chat ${id}`);
       if (user && (await isParticipant(user.id, id))) {
         if (type === "JOIN") {
+          logger.info(`User ${user.id} joined chat ${id}`);
           await socket.join(`chat:${id}`);
         }
 
@@ -70,31 +72,24 @@ const setupServerListeners = (io: Server) => {
   });
 };
 
-// function emitToUser(userId: string, eventName: string, data: unknown) {
-//   const io = getIO();
+const emitToUser = (userId: string, eventName: string, data: unknown) => {
+  const io = getIO();
 
-//   const socketIds = userSocketMap.get(userId);
+  const socketIds = userSocketMap.get(userId);
 
-//   if (!socketIds) {
-//     logger.info({ userId }, "User is not connected");
-//     return;
-//   }
+  if (!socketIds) {
+    return;
+  }
 
-//   for (const socketId of socketIds) {
-//     io?.to(socketId).emit(eventName, data);
-//   }
-// }
+  for (const socketId of socketIds) {
+    io?.to(socketId).emit(eventName, data);
+  }
+};
 
-// const createSendDataToFrontEnd = (serviceName: string) => {
-//   return (eventName: string, data: unknown, toService: boolean, customRoom?: string) => {
-//     const io = getIO();
+const emitToChat = (id: string, eventName: string, data: unknown) => {
+  const io = getIO();
 
-//     if (toService) {
-//       io?.to(customRoom ?? serviceName).emit(eventName, data);
-//     } else {
-//       io?.emit(eventName, data);
-//     }
-//   };
-// };
+  io?.to(`chat:${id}`).emit(eventName, data);
+};
 
-export { setIO, getIO, setupServerListeners };
+export { setIO, getIO, setupServerListeners, emitToUser, emitToChat };

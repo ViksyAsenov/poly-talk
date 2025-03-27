@@ -23,4 +23,10 @@ interface IFriendRequests {
   }[];
 }
 
-export type { IMinUser, IFriendRequests };
+interface Language {
+  id: string;
+  name: string;
+  code: string;
+}
+
+export type { IMinUser, IFriendRequests, Language };

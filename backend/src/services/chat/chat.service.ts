@@ -9,6 +9,7 @@ import { AppError } from "@common/error/appError";
 import logger from "@config/logger";
 import { GenericErrors } from "@common/constants/error";
 import { MessageData, ParticipantData, ConversationData } from "@services/chat/types";
+import { emitToUser } from "@services/socket";
 
 const getConversationById = async (conversationId: string) => {
   const conversation = (await db.select().from(Conversations).where(eq(Conversations.id, conversationId)))[0];
@@ -303,8 +304,6 @@ const sendMessage = async (userId: string, conversationId: string, content: stri
   if (!conversation.isGroup) {
     const otherParticipant = participants.find((participant) => participant.user.id !== userId);
 
-    logger.info({ otherParticipant }, "Other participant");
-
     if (otherParticipant && !(await areFriends(userId, otherParticipant.user.id))) {
       throw new AppError(ChatErrors.NOT_FRIENDS);
     }
@@ -317,7 +316,6 @@ const sendMessage = async (userId: string, conversationId: string, content: stri
         conversationId,
         senderId: user.id,
         content,
-        originalLanguageId: user.languageId,
       })
       .returning()
   )[0];
@@ -339,7 +337,7 @@ const sendMessage = async (userId: string, conversationId: string, content: stri
       createdAt: message.createdAt,
     };
 
-    if (participantData.languageId && participantData.languageId !== user.languageId) {
+    if (participantData.languageId) {
       try {
         const existingTranslation = (
           await db
@@ -357,11 +355,7 @@ const sendMessage = async (userId: string, conversationId: string, content: stri
           messageData.displayContent = existingTranslation.translatedContent;
           messageData.isTranslated = true;
         } else {
-          const translatedContent = await translateMessage(
-            message.content,
-            participantData.languageId,
-            user.languageId ?? undefined,
-          );
+          const translatedContent = await translateMessage(message.content, participantData.languageId);
 
           const translation = (
             await db
@@ -388,7 +382,7 @@ const sendMessage = async (userId: string, conversationId: string, content: stri
       }
     }
 
-    //TODO: Send message to participant
+    emitToUser(participant.user.id, "chat:message", { conversationId: conversation.id, message: messageData });
   }
 
   return {
@@ -467,7 +461,7 @@ const getConversationMessages = async (userId: string, conversationId: string): 
     messages.map(async (message) => {
       const sender = await getMinUserById(message.senderId);
 
-      if (message.originalLanguageId === user.languageId || !user.languageId) {
+      if (!user.languageId) {
         return {
           id: message.id,
           sender,

@@ -3,6 +3,9 @@ import { useChatStore } from "../../store/chatStore";
 import { Message } from "../../types/chat";
 import { formatDistanceToNow } from "date-fns";
 import { useUserStore } from "../../store/userStore";
+import { useSocket } from "../../hooks/useSocket";
+import { useChatSocket } from "../../hooks/useChatSocket";
+import { socket } from "../../api/socket";
 
 interface MessageBubbleProps {
   message: Message;
@@ -36,7 +39,8 @@ const MessageBubble = ({ message, isOwn }: MessageBubbleProps) => {
 };
 
 const ChatWindow: React.FC = () => {
-  const { messages, currentConversation, fetchMessages } = useChatStore();
+  const { messages, currentConversation, fetchMessages, addMessage } =
+    useChatStore();
   const { user } = useUserStore();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -51,11 +55,37 @@ const ChatWindow: React.FC = () => {
     };
 
     load();
-  }, [currentConversation, fetchMessages]);
+  }, [currentConversation, fetchMessages, user?.languageId]);
+
+  useEffect(() => {
+    if (!currentConversation) {
+      return;
+    }
+
+    socket.emit("room", {
+      id: currentConversation.id,
+      type: "JOIN",
+    });
+
+    return () => {
+      socket.emit("room", {
+        id: currentConversation.id,
+        type: "LEAVE",
+      });
+    };
+  }, [currentConversation]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  useSocket<{ conversationId: string; message: Message }>({
+    event: "chat:message",
+    handler: (data) => {
+      addMessage(data.conversationId, data.message);
+    },
+    dependencies: [currentConversation],
+  });
 
   if (!currentConversation) {
     return (

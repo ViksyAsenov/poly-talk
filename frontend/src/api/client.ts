@@ -1,6 +1,6 @@
 import { APIResponse } from "../types/api";
 import { Message, Conversation, SendMessageRequest } from "../types/chat";
-import { IFriendRequests, IMinUser } from "../types/user";
+import { IFriendRequests, IMinUser, Language } from "../types/user";
 import { client } from "./config";
 
 const authApi = {
@@ -31,6 +31,7 @@ const userApi = {
     client.post(`/user/friends/requests/${id}/reject`),
   getFriends: () => client.get<APIResponse<IMinUser[]>>("/user/friends"),
   removeFriend: (id: string) => client.delete(`/user/friends/${id}`),
+  getLanguages: () => client.get<APIResponse<Language[]>>("/language"),
 };
 
 const chatApi = {

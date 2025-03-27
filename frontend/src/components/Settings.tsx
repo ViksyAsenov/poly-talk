@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useUserStore } from "../store/userStore";
 
 const Settings = () => {
-  const { user, updateUser } = useUserStore();
+  const { user, updateUser, languages } = useUserStore();
   const [displayName, setDisplayName] = useState<string | undefined>(
     user?.displayName || undefined
   );
@@ -60,12 +60,18 @@ const Settings = () => {
             <label className="block text-sm font-medium text-gray-700">
               Preferred Language
             </label>
-            <input
-              type="text"
+            <select
               value={languageId}
               onChange={(e) => setLanguageId(e.target.value)}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-            />
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 bg-white"
+            >
+              <option value="none">None</option>
+              {languages.map((language) => (
+                <option key={language.id} value={language.id}>
+                  {language.name}
+                </option>
+              ))}
+            </select>
           </div>
           <button
             type="submit"

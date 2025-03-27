@@ -34,13 +34,12 @@ const getLanguageById = async (id: string, throwError: boolean) => {
   }
 };
 
-const translateMessage = async (message: string, targetLanguageId: string, sourceLanguageId?: string) => {
-  const sourceLanguage = await getLanguageById(sourceLanguageId ?? "", false);
+const translateMessage = async (message: string, targetLanguageId: string) => {
   const targetLanguage = await getLanguageById(targetLanguageId, true);
 
   const { data, status } = await axios.post<LibretranslateResponse>(`${config.app.libretranslate_url}/translate`, {
     q: message,
-    source: sourceLanguage?.code ?? "auto",
+    source: "auto",
     target: targetLanguage?.code,
     alternatives: 1,
   });

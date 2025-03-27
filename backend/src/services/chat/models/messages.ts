@@ -13,7 +13,6 @@ const Messages = pgTable("messages", {
     .references(() => Users.id)
     .notNull(),
   content: text("content").notNull(),
-  originalLanguageId: uuid("original_language_id").references(() => Languages.id),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 

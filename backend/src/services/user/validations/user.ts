@@ -17,10 +17,7 @@ const updateUserBodyValidation = z.object({
     .string({ message: createZodMessage(UserErrors.INVALID_NAME) })
     .min(1, { message: createZodMessage(UserErrors.INVALID_NAME) })
     .optional(),
-  languageId: z
-    .string({ message: createZodMessage(UserErrors.INVALID_LANGUAGE) })
-    .uuid({ message: createZodMessage(UserErrors.INVALID_LANGUAGE) })
-    .optional(),
+  languageId: z.string({ message: createZodMessage(UserErrors.INVALID_LANGUAGE) }).optional(),
 });
 
 export type TUpdateUserBody = z.infer<typeof updateUserBodyValidation>;

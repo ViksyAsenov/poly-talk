@@ -55,6 +55,7 @@ const ConversationItem = ({
 };
 
 const ConversationList: React.FC = () => {
+  const { user } = useUserStore();
   const {
     conversations,
     currentConversation,
@@ -71,7 +72,7 @@ const ConversationList: React.FC = () => {
     };
 
     load();
-  }, [fetchConversations]);
+  }, [fetchConversations, user?.languageId]);
 
   if (isLoading) {
     return (
