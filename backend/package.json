@@ -1,0 +1,57 @@
+{
+  "name": "polytalk-backend",
+  "version": "4.2.0",
+  "main": "./src/index.ts",
+  "author": "Viktor Asenov",
+  "scripts": {
+    "start": "npx tsx ./src/index.ts | npx pino-pretty",
+    "dev": "nodemon",
+    "db:generate": "npx drizzle-kit generate",
+    "db:migrate": "npx tsx .drizzle/migrate.ts",
+    "db:rollback": "npx drizzle-kit drop",
+    "db:studio": "npx drizzle-kit studio",
+    "db:seed": "npx tsx .drizzle/seed/index.ts",
+    "build": "npx tsc && npx tsc-alias",
+    "pretty": "npx prettier --write .",
+    "lint": "npx eslint",
+    "lint:fix": "npx eslint --fix"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "license": "MIT",
+  "type": "module",
+  "dependencies": {
+    "axios": "^1.8.3",
+    "body-parser": "^1.20.3",
+    "connect-pg-simple": "^10.0.0",
+    "convict": "^6.2.4",
+    "convict-format-with-validator": "^6.2.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "drizzle-orm": "^0.36.1",
+    "express": "^4.21.2",
+    "express-rate-limit": "^7.4.1",
+    "express-session": "^1.18.1",
+    "pg": "^8.13.1",
+    "pino": "^9.6.0",
+    "postgres": "^3.4.5",
+    "request-ip": "^3.3.0",
+    "socket.io": "^4.8.1",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/connect-pg-simple": "^7.0.3",
+    "@types/convict": "^6.1.6",
+    "@types/convict-format-with-validator": "^6.0.5",
+    "@types/express": "^5.0.0",
+    "@types/express-session": "^1.18.1",
+    "drizzle-kit": "^0.28.0",
+    "eslint": "^9.20.1",
+    "nodemon": "^3.1.7",
+    "prettier": "^3.5.1",
+    "tsx": "^4.19.2",
+    "typescript": "^5.6.3",
+    "typescript-eslint": "^8.14.0"
+  }
+}

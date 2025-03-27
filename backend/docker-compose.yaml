@@ -1,0 +1,29 @@
+services:
+  postgres:
+    image: postgres:15
+    container_name: db
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+      PGPORT: ${DB_PORT}
+    ports:
+      - ${DB_PORT}:${DB_PORT}
+    volumes:
+      - db_data:/var/lib/postgresql/data
+  libretranslate:
+    image: libretranslate/libretranslate:latest
+    container_name: libretranslate
+    environment:
+      - LT_UPDATE_MODELS=true
+      - LT_LOAD_ONLY=en,fr,es,de,it,pt,ru,ja,zh,bg
+    ports:
+      - "5000:5000"
+    volumes:
+      - libretranslate_models:/home/libretranslate/.local:rw
+    healthcheck:
+      test: ["CMD-SHELL", "./venv/bin/python scripts/healthcheck.py"]
+
+volumes:
+  db_data:
+  libretranslate_models:

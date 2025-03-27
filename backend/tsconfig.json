@@ -1,0 +1,43 @@
+{
+  "compilerOptions": {
+    "lib": ["es2023"],
+    "module": "CommonJS",
+    "moduleResolution": "node",
+    "target": "es2022",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "noUncheckedIndexedAccess": true,
+
+    "paths": {
+      "@config/*": ["src/config/*"],
+      "@common/*": ["src/common/*"],
+      "@services/*": ["src/services/*"],
+      "@controllers/*": ["src/controllers/*"],
+      "@middlewares/*": ["src/middlewares/*"],
+      "@routes/*": ["src/routes/*"],
+      "@package": ["package.json"],
+      "@logger": ["src/config/logger.ts"],
+      "@schema": [".drizzle/schema"],
+      "@utils/*": ["src/utils/*"]
+    },
+
+    "baseUrl": ".",
+    "outDir": "./dist",
+    "sourceMap": true,
+    "inlineSources": true,
+
+    "sourceRoot": "/"
+  },
+  "include": [
+    "src/**/*.ts",
+    "test/**/*.ts",
+    "eslint.config.mjs",
+    "scripts/*.ts",
+    ".drizzle/**/*.ts",
+    "drizzle.config.ts",
+    "decs.d.ts"
+  ]
+}

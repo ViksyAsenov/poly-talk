@@ -1,0 +1,6 @@
+{
+  "watch": ["./"],
+  "ext": ".ts,.js,.json,.env,.tsx",
+  "ignore": [],
+  "exec": "npm start"
+}
