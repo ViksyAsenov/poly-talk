@@ -1,97 +1,145 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useUserStore } from "../store/userStore";
+import { Language } from "../types/user";
+import { motion } from "framer-motion";
+import { pageTransition } from "../utils/animations";
 
 const Settings = () => {
-  const { user, updateUser, languages } = useUserStore();
-  const [displayName, setDisplayName] = useState<string | undefined>(
-    user?.displayName || undefined
-  );
-  const [languageId, setLanguageId] = useState<string | undefined>(
-    user?.languageId || undefined
-  );
-  const [firstName, setFirstName] = useState<string | undefined>(
-    user?.firstName || undefined
-  );
-  const [lastName, setLastName] = useState<string | undefined>(
-    user?.lastName || undefined
-  );
+  const { user, updateUser, languages, fetchLanguages, logout } =
+    useUserStore();
+  const [displayName, setDisplayName] = useState("");
+  const [selectedLanguage, setSelectedLanguage] = useState<string | null>(null);
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    if (user) {
+      setDisplayName(user.displayName || "");
+      setSelectedLanguage(user.languageId);
+      setFirstName(user.firstName || "");
+      setLastName(user.lastName || "");
+    }
+  }, [user]);
+
+  useEffect(() => {
+    fetchLanguages();
+  }, [fetchLanguages]);
+
+  const handleUpdateProfile = async () => {
+    if (!user) return;
+
+    setIsLoading(true);
+    try {
+      await updateUser(
+        displayName,
+        firstName,
+        lastName,
+        selectedLanguage ?? undefined
+      );
+    } catch (error) {
+      console.error("Error updating profile:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleLanguageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const value = e.target.value;
+    setSelectedLanguage(value === "" ? null : value);
+  };
+
+  if (!user) return null;
 
   return (
-    <div className="max-w-2xl mx-auto p-6">
-      <h1 className="text-2xl font-bold mb-6">Settings</h1>
+    <motion.div
+      {...pageTransition}
+      className="p-6 bg-bg flex-1 overflow-y-auto"
+    >
+      <div className="max-w-lg mx-auto">
+        <h1 className="text-2xl font-bold mb-6 text-text">Settings</h1>
 
-      <div className="bg-white shadow rounded-lg p-6 mb-6">
-        <h2 className="text-xl font-semibold mb-4">Profile Settings</h2>
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700">
+        <div className="bg-secondary-bg rounded-lg shadow p-6 mb-6 border border-secondary-bg">
+          <h2 className="text-xl font-semibold mb-4 text-text">Profile</h2>
+
+          <div className="mb-4">
+            <label className="block text-secondary-text mb-1 font-medium">
               Display Name
             </label>
             <input
               type="text"
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-secondary-bg rounded-lg bg-bg focus:outline-none focus:ring-2 focus:ring-accent text-text"
+              placeholder="Display Name"
             />
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700">
+
+          <div className="mb-4">
+            <label className="block text-secondary-text mb-1 font-medium">
               First Name
             </label>
             <input
               type="text"
               value={firstName}
               onChange={(e) => setFirstName(e.target.value)}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-secondary-bg rounded-lg bg-bg focus:outline-none focus:ring-2 focus:ring-accent text-text"
+              placeholder="First Name"
             />
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700">
+
+          <div className="mb-4">
+            <label className="block text-secondary-text mb-1 font-medium">
               Last Name
             </label>
             <input
               type="text"
               value={lastName}
               onChange={(e) => setLastName(e.target.value)}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-secondary-bg rounded-lg bg-bg focus:outline-none focus:ring-2 focus:ring-accent text-text"
+              placeholder="Last Name"
             />
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700">
-              Preferred Language
+
+          <div className="mb-4">
+            <label className="block text-secondary-text mb-1 font-medium">
+              Primary Language
             </label>
             <select
-              value={languageId}
-              onChange={(e) => setLanguageId(e.target.value)}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 bg-white"
+              value={selectedLanguage || ""}
+              onChange={handleLanguageChange}
+              className="w-full px-3 py-2 border border-secondary-bg rounded-lg bg-bg focus:outline-none focus:ring-2 focus:ring-accent text-text"
             >
-              <option value="none">None</option>
-              {languages.map((language) => (
+              <option value="">Select a language</option>
+              {languages.map((language: Language) => (
                 <option key={language.id} value={language.id}>
                   {language.name}
                 </option>
               ))}
             </select>
           </div>
+
           <button
-            type="submit"
-            onClick={async () => {
-              if (user) {
-                await updateUser(
-                  user.displayName === displayName ? undefined : displayName,
-                  user.firstName === firstName ? undefined : firstName,
-                  user.lastName === lastName ? undefined : lastName,
-                  user.languageId === languageId ? undefined : languageId
-                );
-              }
-            }}
-            className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+            onClick={handleUpdateProfile}
+            disabled={isLoading}
+            className="w-full bg-accent text-white py-2 rounded-lg font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Update Profile
+            {isLoading ? "Saving..." : "Save Changes"}
+          </button>
+        </div>
+
+        <div className="bg-secondary-bg rounded-lg shadow p-6 border border-secondary-bg">
+          <h2 className="text-xl font-semibold mb-4 text-text">Account</h2>
+
+          <button
+            onClick={logout}
+            className="w-full bg-error text-white py-2 rounded-lg font-medium hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+          >
+            Log Out
           </button>
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 };
 

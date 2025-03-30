@@ -1,230 +1,252 @@
-import { useState, useMemo, useEffect } from "react";
-import { chatApi } from "../api/client";
-import toast from "react-hot-toast";
+import { useState, useEffect } from "react";
 import { useUserStore } from "../store/userStore";
+import { IMinUser } from "../types/user";
+import { motion } from "framer-motion";
+import { pageTransition } from "../utils/animations";
 
-export const Friends = () => {
+const FriendItem = ({ friend }: { friend: IMinUser }) => {
+  const { removeFriend } = useUserStore();
+
+  return (
+    <div className="flex items-center justify-between p-4 border-b border-secondary-bg">
+      <div className="flex items-center">
+        <div className="w-10 h-10 rounded-full bg-secondary-bg flex items-center justify-center text-text overflow-hidden">
+          {friend.avatar ? (
+            <img
+              src={friend.avatar}
+              alt={friend.displayName}
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            friend.displayName?.charAt(0).toUpperCase()
+          )}
+        </div>
+        <div className="ml-3">
+          <h3 className="font-medium text-text">{friend.displayName}</h3>
+          <p className="text-sm text-secondary-text">{friend.tag}</p>
+        </div>
+      </div>
+      <button
+        onClick={() => removeFriend(friend.id)}
+        className="text-error hover:bg-error hover:bg-opacity-10 px-3 py-1 rounded-md text-sm"
+      >
+        Remove
+      </button>
+    </div>
+  );
+};
+
+const FriendRequestItem = ({ request }: { request: any }) => {
+  const { acceptFriendRequest, rejectFriendRequest } = useUserStore();
+
+  return (
+    <div className="flex items-center justify-between p-4 border-b border-secondary-bg">
+      <div className="flex items-center">
+        <div className="w-10 h-10 rounded-full bg-secondary-bg flex items-center justify-center text-text overflow-hidden">
+          {request.sender.avatar ? (
+            <img
+              src={request.sender.avatar}
+              alt={request.sender.displayName}
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            request.sender.displayName?.charAt(0).toUpperCase()
+          )}
+        </div>
+        <div className="ml-3">
+          <h3 className="font-medium text-text">
+            {request.sender.displayName}
+          </h3>
+          <p className="text-sm text-secondary-text">@{request.sender.tag}</p>
+        </div>
+      </div>
+      <div className="flex space-x-2">
+        <button
+          onClick={() => acceptFriendRequest(request.id)}
+          className="bg-accent text-white px-3 py-1 rounded-md text-sm hover:bg-blue-700"
+        >
+          Accept
+        </button>
+        <button
+          onClick={() => rejectFriendRequest(request.id)}
+          className="bg-secondary-bg text-text px-3 py-1 rounded-md text-sm hover:bg-gray-300"
+        >
+          Reject
+        </button>
+      </div>
+    </div>
+  );
+};
+
+const SentRequestItem = ({ request }: { request: any }) => (
+  <div className="flex items-center justify-between p-4 border-b border-secondary-bg">
+    <div className="flex items-center">
+      <div className="w-10 h-10 rounded-full bg-secondary-bg flex items-center justify-center text-text overflow-hidden">
+        {request.receiver.avatar ? (
+          <img
+            src={request.receiver.avatar}
+            alt={request.receiver.displayName}
+            className="w-full h-full object-cover"
+          />
+        ) : (
+          request.receiver.displayName?.charAt(0).toUpperCase()
+        )}
+      </div>
+      <div className="ml-3">
+        <h3 className="font-medium text-text">
+          {request.receiver.displayName}
+        </h3>
+        <p className="text-sm text-secondary-text">@{request.receiver.tag}</p>
+      </div>
+    </div>
+    <div className="flex space-x-2">
+      <span className="text-sm text-secondary-text italic">Pending</span>
+    </div>
+  </div>
+);
+
+const EmptyState = ({ message }: { message: string }) => (
+  <div className="flex flex-col items-center justify-center p-8 text-center">
+    <p className="text-secondary-text">{message}</p>
+  </div>
+);
+
+const Friends = () => {
+  const [tag, setTag] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState<"friends" | "requests">("friends");
   const {
-    user,
     friends,
     pendingFriendRequests,
-    sendFriendRequest,
-    removeFriend,
-    acceptFriendRequest,
-    rejectFriendRequest,
     fetchFriends,
     fetchPendingFriendRequests,
+    sendFriendRequest,
   } = useUserStore();
-  const [friendTag, setFriendTag] = useState("");
-  const [searchTerm, setSearchTerm] = useState("");
-  const [activeTab, setActiveTab] = useState<"friends" | "requests">("friends");
 
   useEffect(() => {
     fetchFriends();
     fetchPendingFriendRequests();
   }, [fetchFriends, fetchPendingFriendRequests]);
 
-  const handleStartDirectConversation = async (friendId: string) => {
+  const handleSendRequest = async () => {
+    if (!tag) return;
+
+    setIsLoading(true);
     try {
-      const response = await chatApi.createDirectConversation(friendId);
-      const { data } = response.data;
-      window.location.href = `/chat/${data.id}`;
+      await sendFriendRequest(tag);
+      setTag("");
     } catch (error) {
-      toast.error("Failed to start conversation");
+      console.error("Error sending friend request:", error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const filteredFriends = useMemo(() => {
-    return friends.filter(
-      (friend) =>
-        friend.displayName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        friend.tag.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-  }, [friends, searchTerm]);
-
   return (
-    <div className="max-w-2xl mx-auto p-6">
-      <h1 className="text-2xl font-bold mb-6">Friends</h1>
+    <motion.div
+      {...pageTransition}
+      className="p-6 bg-bg flex-1 overflow-y-auto"
+    >
+      <div className="max-w-xl mx-auto">
+        <h1 className="text-2xl font-bold mb-6 text-text">Friends</h1>
 
-      <div className="bg-white shadow rounded-lg p-6 mb-4">
-        <div>{user?.tag}</div>
-        <div className="flex gap-2 mb-6">
-          <input
-            type="text"
-            value={friendTag}
-            onChange={(e) => setFriendTag(e.target.value)}
-            placeholder="Enter friend's tag (e.g., username#1234)"
-            className="flex-1 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-          />
-          <button
-            type="submit"
-            className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-            onClick={async () => {
-              await sendFriendRequest(friendTag);
-              setFriendTag("");
-            }}
-          >
-            Add Friend
-          </button>
+        <div className="bg-secondary-bg rounded-lg shadow mb-6 border border-secondary-bg">
+          <div className="p-4">
+            <h2 className="text-lg font-semibold mb-2 text-text">Add Friend</h2>
+            <p className="text-sm text-secondary-text mb-4">
+              Enter a friend's tag to send them a friend request
+            </p>
+            <div className="flex">
+              <input
+                type="text"
+                value={tag}
+                onChange={(e) => setTag(e.target.value)}
+                placeholder="Enter username#tag"
+                className="flex-1 px-3 py-2 border border-secondary-bg rounded-l-lg bg-bg focus:outline-none focus:ring-2 focus:ring-accent text-text"
+              />
+              <button
+                onClick={handleSendRequest}
+                disabled={!tag || isLoading}
+                className="bg-accent text-white px-4 py-2 rounded-r-lg font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-accent disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isLoading ? "Sending..." : "Send"}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-secondary-bg rounded-lg shadow border border-secondary-bg">
+          <div className="flex border-b border-secondary-bg">
+            <button
+              onClick={() => setActiveTab("friends")}
+              className={`flex-1 py-3 text-center font-medium ${
+                activeTab === "friends"
+                  ? "text-accent border-b-2 border-accent"
+                  : "text-secondary-text hover:bg-gray-200"
+              }`}
+            >
+              Friends ({friends.length})
+            </button>
+            <button
+              onClick={() => setActiveTab("requests")}
+              className={`flex-1 py-3 text-center font-medium ${
+                activeTab === "requests"
+                  ? "text-accent border-b-2 border-accent"
+                  : "text-secondary-text hover:bg-gray-200"
+              }`}
+            >
+              Requests (
+              {pendingFriendRequests.received.length +
+                pendingFriendRequests.sent.length}
+              )
+            </button>
+          </div>
+
+          {activeTab === "friends" ? (
+            <div key="friends" className="max-h-96 overflow-y-auto">
+              {friends.length === 0 ? (
+                <EmptyState message="You don't have any friends yet. Add some friends to get started!" />
+              ) : (
+                friends.map((friend) => (
+                  <FriendItem key={friend.id} friend={friend} />
+                ))
+              )}
+            </div>
+          ) : (
+            <div key="requests" className="max-h-96 overflow-y-auto">
+              {pendingFriendRequests.received.length === 0 &&
+              pendingFriendRequests.sent.length === 0 ? (
+                <EmptyState message="You don't have any pending friend requests." />
+              ) : (
+                <>
+                  {pendingFriendRequests.received.length > 0 && (
+                    <div className="p-2 bg-gray-100">
+                      <h3 className="text-sm font-medium text-secondary-text px-2">
+                        Received Requests
+                      </h3>
+                    </div>
+                  )}
+                  {pendingFriendRequests.received.map((request) => (
+                    <FriendRequestItem key={request.id} request={request} />
+                  ))}
+
+                  {pendingFriendRequests.sent.length > 0 && (
+                    <div className="p-2 bg-gray-100">
+                      <h3 className="text-sm font-medium text-secondary-text px-2">
+                        Sent Requests
+                      </h3>
+                    </div>
+                  )}
+                  {pendingFriendRequests.sent.map((request) => (
+                    <SentRequestItem key={request.id} request={request} />
+                  ))}
+                </>
+              )}
+            </div>
+          )}
         </div>
       </div>
-
-      <div className="flex mb-4">
-        <button
-          onClick={() => setActiveTab("friends")}
-          className={`px-4 py-2 ${
-            activeTab === "friends"
-              ? "bg-blue-500 text-white"
-              : "bg-gray-200 text-gray-700"
-          } mr-2 rounded`}
-        >
-          Friends
-        </button>
-        <button
-          onClick={() => setActiveTab("requests")}
-          className={`px-4 py-2 ${
-            activeTab === "requests"
-              ? "bg-blue-500 text-white"
-              : "bg-gray-200 text-gray-700"
-          } rounded`}
-        >
-          Friend Requests
-        </button>
-      </div>
-
-      {activeTab === "friends" && (
-        <div className="bg-white shadow rounded-lg p-6">
-          <input
-            type="text"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Search friends..."
-            className="w-full mb-4 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-          />
-
-          <div className="space-y-4">
-            {filteredFriends.map((friend) => (
-              <div
-                key={friend.id}
-                className="flex items-center justify-between p-4 bg-gray-50 rounded-lg"
-              >
-                <div className="flex items-center space-x-3">
-                  <img
-                    src={friend.avatar || "/default-avatar.png"}
-                    alt={friend.displayName}
-                    className="h-10 w-10 rounded-full"
-                  />
-                  <div>
-                    <div className="font-medium">{friend.displayName}</div>
-                    <div className="text-sm text-gray-500">{friend.tag}</div>
-                  </div>
-                </div>
-                <div className="flex space-x-2">
-                  <button
-                    onClick={() => handleStartDirectConversation(friend.id)}
-                    className="text-blue-600 hover:text-blue-800"
-                  >
-                    Message
-                  </button>
-                  <button
-                    onClick={() => removeFriend(friend.id)}
-                    className="text-red-600 hover:text-red-800 disabled:opacity-50"
-                  >
-                    Remove
-                  </button>
-                </div>
-              </div>
-            ))}
-            {filteredFriends.length === 0 && (
-              <p className="text-gray-500 text-center py-4">
-                {searchTerm ? "No friends match your search" : "No friends yet"}
-              </p>
-            )}
-          </div>
-        </div>
-      )}
-
-      {activeTab === "requests" && (
-        <div className="bg-white shadow rounded-lg p-6">
-          <h3 className="text-lg font-semibold mb-4">Received Requests</h3>
-          <div className="space-y-4">
-            {pendingFriendRequests.received.map((request) => (
-              <div
-                key={request.id}
-                className="flex items-center justify-between p-4 bg-gray-50 rounded-lg"
-              >
-                <div className="flex items-center space-x-3">
-                  <img
-                    src={request.sender.avatar || "/default-avatar.png"}
-                    alt={request.sender.displayName}
-                    className="h-10 w-10 rounded-full"
-                  />
-                  <div>
-                    <div className="font-medium">
-                      {request.sender.displayName}
-                    </div>
-                    <div className="text-sm text-gray-500">
-                      {request.sender.tag}
-                    </div>
-                  </div>
-                </div>
-                <div className="flex space-x-2">
-                  <button
-                    onClick={() => acceptFriendRequest(request.id)}
-                    className="text-green-600 hover:text-green-800"
-                  >
-                    Accept
-                  </button>
-                  <button
-                    onClick={() => rejectFriendRequest(request.id)}
-                    className="text-red-600 hover:text-red-800"
-                  >
-                    Reject
-                  </button>
-                </div>
-              </div>
-            ))}
-            {pendingFriendRequests.received.length === 0 && (
-              <p className="text-gray-500 text-center py-4">
-                No pending friend requests
-              </p>
-            )}
-          </div>
-
-          <h3 className="text-lg font-semibold mt-6 mb-4">Sent Requests</h3>
-          <div className="space-y-4">
-            {pendingFriendRequests.sent.map((request) => (
-              <div
-                key={request.id}
-                className="flex items-center justify-between p-4 bg-gray-50 rounded-lg"
-              >
-                <div className="flex items-center space-x-3">
-                  <img
-                    src={request.receiver.avatar || "/default-avatar.png"}
-                    alt={request.receiver.displayName}
-                    className="h-10 w-10 rounded-full"
-                  />
-                  <div>
-                    <div className="font-medium">
-                      {request.receiver.displayName}
-                    </div>
-                    <div className="text-sm text-gray-500">
-                      {request.receiver.tag}
-                    </div>
-                  </div>
-                </div>
-                <span className="text-gray-500 text-sm">Pending</span>
-              </div>
-            ))}
-            {pendingFriendRequests.sent.length === 0 && (
-              <p className="text-gray-500 text-center py-4">
-                No sent friend requests
-              </p>
-            )}
-          </div>
-        </div>
-      )}
-    </div>
+    </motion.div>
   );
 };
 

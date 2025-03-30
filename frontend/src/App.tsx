@@ -1,23 +1,71 @@
-import { useState, useEffect } from "react";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+  useLocation,
+  Link,
+} from "react-router-dom";
+import { AnimatePresence, motion } from "framer-motion";
 import { Toaster } from "react-hot-toast";
 import { useUserStore } from "./store/userStore";
+import { useEffect, useState } from "react";
 import Login from "./components/Login";
 import ChatInterface from "./components/ChatInterface";
-import Settings from "./components/Settings";
 import Friends from "./components/Friends";
+import Settings from "./components/Settings";
+import { pageTransition } from "./utils/animations";
 
-export const App = () => {
+const AnimatedRoutes = () => {
+  const location = useLocation();
+
+  return (
+    <AnimatePresence mode="wait">
+      <motion.div
+        key={location.pathname}
+        {...pageTransition}
+        className="h-full w-full absolute"
+      >
+        <Routes location={location} key={location.pathname}>
+          <Route path="/" element={<Navigate to="/chat" />} />
+          <Route path="/chat" element={<ChatInterface />} />
+          <Route path="/chat/:conversationId" element={<ChatInterface />} />
+          <Route path="/friends" element={<Friends />} />
+          <Route path="/settings" element={<Settings />} />
+          <Route path="*" element={<div>Page not found</div>} />
+        </Routes>
+      </motion.div>
+    </AnimatePresence>
+  );
+};
+
+const NavButton = ({ to, label }: { to: string; label: string }) => {
+  const location = useLocation();
+  const isActive = location.pathname.startsWith(to);
+
+  return (
+    <Link
+      to={to}
+      className={`mb-2 px-2 py-1 rounded transition-colors duration-200 ${
+        isActive ? "bg-accent text-white" : "text-text hover:bg-secondary-bg"
+      }`}
+    >
+      {label}
+    </Link>
+  );
+};
+
+const App = () => {
   const { isAuthenticated, checkAuth, fetchLanguages } = useUserStore();
-  const [currentPage, setCurrentPage] = useState<
-    "chat" | "friends" | "settings"
-  >("chat");
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const load = async () => {
       setIsLoading(true);
+
       await checkAuth();
       await fetchLanguages();
+
       setIsLoading(false);
     };
 
@@ -26,8 +74,8 @@ export const App = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      <div className="h-screen w-screen flex items-center justify-center bg-bg">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-accent"></div>
       </div>
     );
   }
@@ -37,67 +85,22 @@ export const App = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <nav className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16">
-            <div className="flex">
-              <div className="flex-shrink-0 flex items-center">
-                <h1 className="text-xl font-bold text-gray-900">PolyTalk</h1>
-              </div>
-              <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
-                <button
-                  onClick={() => setCurrentPage("chat")}
-                  className={`${
-                    currentPage === "chat"
-                      ? "border-blue-500 text-gray-900"
-                      : "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700"
-                  } inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium`}
-                >
-                  Chat
-                </button>
-                <button
-                  onClick={() => setCurrentPage("friends")}
-                  className={`${
-                    currentPage === "friends"
-                      ? "border-blue-500 text-gray-900"
-                      : "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700"
-                  } inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium`}
-                >
-                  Friends
-                </button>
-                <button
-                  onClick={() => setCurrentPage("settings")}
-                  className={`${
-                    currentPage === "settings"
-                      ? "border-blue-500 text-gray-900"
-                      : "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700"
-                  } inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium`}
-                >
-                  Settings
-                </button>
-              </div>
-            </div>
-          </div>
+    <Router>
+      <div className="h-screen w-screen flex bg-bg">
+        <div className="bg-bg border-r border-secondary-bg shadow-sm w-20 flex flex-col items-center py-4 h-full justify-center space-y-6">
+          <NavButton to="/chat" label="Chat" />
+          <NavButton to="/friends" label="Friends" />
+          <NavButton to="/settings" label="Settings" />
         </div>
-      </nav>
-      <main className="py-10">
-        <div className="max-w-7xl mx-auto sm:px-6 lg:px-8">
-          {(() => {
-            switch (currentPage) {
-              case "chat":
-                return <ChatInterface />;
-              case "friends":
-                return <Friends />;
-              case "settings":
-                return <Settings />;
-              default:
-                return <div>Page not found</div>;
-            }
-          })()}
+
+        <div className="flex-1 overflow-hidden relative">
+          <AnimatedRoutes />
         </div>
-      </main>
-      <Toaster position="bottom-right" />
-    </div>
+
+        <Toaster position="bottom-right" />
+      </div>
+    </Router>
   );
 };
+
+export default App;

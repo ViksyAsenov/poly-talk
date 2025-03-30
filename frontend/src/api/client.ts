@@ -5,7 +5,7 @@ import { client } from "./config";
 
 const authApi = {
   getGoogleLoginUrl: () => client.get<APIResponse<string>>("/auth/google"),
-  logout: () => client.post("/auth/logout"),
+  logout: () => client.post<APIResponse<null>>("/auth/logout"),
 };
 
 const userApi = {

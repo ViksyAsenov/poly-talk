@@ -4,7 +4,6 @@ import { Message } from "../../types/chat";
 import { formatDistanceToNow } from "date-fns";
 import { useUserStore } from "../../store/userStore";
 import { useSocket } from "../../hooks/useSocket";
-import { useChatSocket } from "../../hooks/useChatSocket";
 import { socket } from "../../api/socket";
 
 interface MessageBubbleProps {
@@ -16,17 +15,16 @@ const MessageBubble = ({ message, isOwn }: MessageBubbleProps) => {
   return (
     <div className={`flex ${isOwn ? "justify-end" : "justify-start"} mb-4`}>
       <div
-        className={`max-w-[70%] rounded-lg px-4 py-2 ${
-          isOwn ? "bg-primary-600 text-white" : "bg-white text-gray-900"
-        }`}
+        className={`max-w-[85%] md:max-w-[70%] rounded-lg px-4 py-2 shadow 
+          ${isOwn ? "bg-accent text-white" : "bg-bg text-text"}`}
       >
         <div className="text-sm font-medium mb-1">
           {message.sender.displayName}
         </div>
-        <div className="text-sm">{message.displayContent}</div>
+        <div className="text-sm break-words">{message.displayContent}</div>
         <div
           className={`text-xs mt-1 ${
-            isOwn ? "text-primary-100" : "text-gray-500"
+            isOwn ? "text-white text-opacity-80" : "text-secondary-text"
           }`}
         >
           {formatDistanceToNow(new Date(message.createdAt), {
@@ -37,6 +35,44 @@ const MessageBubble = ({ message, isOwn }: MessageBubbleProps) => {
     </div>
   );
 };
+
+const MessageSkeleton = ({ isOwn = false }: { isOwn?: boolean }) => (
+  <div className={`flex ${isOwn ? "justify-end" : "justify-start"} mb-4`}>
+    <div
+      className={`max-w-[85%] md:max-w-[70%] rounded-lg px-4 py-2 bg-secondary-bg`}
+    >
+      <div className="h-4 w-24 bg-gray-300 rounded mb-2"></div>
+      <div className="h-4 w-48 bg-gray-300 rounded mb-2"></div>
+      <div className="h-4 w-32 bg-gray-300 rounded mb-1"></div>
+      <div className="h-3 w-16 bg-gray-300 rounded mt-2"></div>
+    </div>
+  </div>
+);
+
+const HeaderSkeleton = () => (
+  <div className="p-4 border-b border-secondary-bg flex-shrink-0">
+    <div className="h-7 w-40 bg-gray-300 rounded"></div>
+  </div>
+);
+
+const EmptyConversation = () => (
+  <div className="flex items-center justify-center h-full p-4">
+    <div className="text-center">
+      <p className="text-secondary-text mb-2">No conversation selected</p>
+      <p className="text-secondary-text text-sm">
+        Select a conversation from the list to start chatting
+      </p>
+    </div>
+  </div>
+);
+
+const NoMessages = () => (
+  <div className="h-full flex items-center justify-center">
+    <p className="text-secondary-text text-center">
+      No messages yet. Start the conversation!
+    </p>
+  </div>
+);
 
 const ChatWindow: React.FC = () => {
   const { messages, currentConversation, fetchMessages, addMessage } =
@@ -58,9 +94,7 @@ const ChatWindow: React.FC = () => {
   }, [currentConversation, fetchMessages, user?.languageId]);
 
   useEffect(() => {
-    if (!currentConversation) {
-      return;
-    }
+    if (!currentConversation) return;
 
     socket.emit("room", {
       id: currentConversation.id,
@@ -88,40 +122,49 @@ const ChatWindow: React.FC = () => {
   });
 
   if (!currentConversation) {
-    return (
-      <div className="flex items-center justify-center h-full">
-        <p className="text-gray-500">Select a conversation to start chatting</p>
-      </div>
-    );
-  }
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-full">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
-      </div>
-    );
+    return <EmptyConversation />;
   }
 
   return (
     <div className="flex flex-col h-full">
-      <div className="p-4 border-b">
-        <h2 className="text-xl font-semibold">
-          {currentConversation.isGroup
-            ? currentConversation.name
-            : currentConversation.participants[0].user.displayName}
-        </h2>
-      </div>
-      <div className="flex-1 overflow-y-auto p-4">
-        {messages.map((message) => (
-          <MessageBubble
-            key={message.id}
-            message={message}
-            isOwn={message.sender.id === user?.id}
-          />
-        ))}
-        <div ref={messagesEndRef} />
-      </div>
+      {isLoading ? (
+        <>
+          <HeaderSkeleton />
+          <div className="flex-1 overflow-y-auto p-4 pb-6 bg-secondary-bg">
+            <MessageSkeleton />
+            <MessageSkeleton isOwn={true} />
+            <MessageSkeleton />
+            <MessageSkeleton isOwn={true} />
+          </div>
+        </>
+      ) : (
+        <>
+          <div className="p-4 border-b border-secondary-bg flex-shrink-0 bg-bg">
+            <h2 className="text-xl font-semibold truncate text-text">
+              {currentConversation.isGroup
+                ? currentConversation.name
+                : currentConversation.participants[0].user.displayName}
+            </h2>
+          </div>
+
+          <div className="flex-1 overflow-y-auto p-4 pb-6 bg-secondary-bg">
+            {messages.length === 0 ? (
+              <NoMessages />
+            ) : (
+              <div>
+                {messages.map((message) => (
+                  <MessageBubble
+                    key={message.id}
+                    message={message}
+                    isOwn={message.sender.id === user?.id}
+                  />
+                ))}
+                <div ref={messagesEndRef} />
+              </div>
+            )}
+          </div>
+        </>
+      )}
     </div>
   );
 };

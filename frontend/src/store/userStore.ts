@@ -29,6 +29,7 @@ interface UserState {
 
   checkAuth: () => Promise<void>;
   loginWithGoogle: () => Promise<void>;
+  logout: () => Promise<void>;
 }
 
 const useUserStore = create<UserState>((set, get) => ({
@@ -138,6 +139,14 @@ const useUserStore = create<UserState>((set, get) => ({
 
     if (success) {
       window.location.href = data;
+    }
+  },
+  logout: async () => {
+    const response = await authApi.logout();
+    const { success } = response.data;
+
+    if (success) {
+      toast.success("Successfully logged out!");
     }
   },
 }));
