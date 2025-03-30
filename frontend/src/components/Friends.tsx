@@ -3,9 +3,21 @@ import { useUserStore } from "../store/userStore";
 import { IMinUser } from "../types/user";
 import { motion } from "framer-motion";
 import { pageTransition } from "../utils/animations";
+import { chatApi } from "../api/client";
+import { useNavigate } from "react-router-dom";
 
 const FriendItem = ({ friend }: { friend: IMinUser }) => {
   const { removeFriend } = useUserStore();
+  const navigate = useNavigate();
+
+  const messageFriend = async (id: string) => {
+    const response = await chatApi.createDirectConversation(id);
+    const { success, data } = response.data;
+
+    if (success) {
+      navigate(`/chat/${data.id}`);
+    }
+  };
 
   return (
     <div className="flex items-center justify-between p-4 border-b border-secondary-bg">
@@ -27,8 +39,14 @@ const FriendItem = ({ friend }: { friend: IMinUser }) => {
         </div>
       </div>
       <button
+        onClick={() => messageFriend(friend.id)}
+        className="text-error hover:bg-accent hover:bg-opacity-10 px-3 py-1 rounded-md text-sm"
+      >
+        Message
+      </button>
+      <button
         onClick={() => removeFriend(friend.id)}
-        className="text-error hover:bg-error hover:bg-opacity-10 px-3 py-1 rounded-md text-sm"
+        className="text-error hover:bg-accent hover:bg-opacity-10 px-3 py-1 rounded-md text-sm"
       >
         Remove
       </button>
@@ -116,6 +134,7 @@ const Friends = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<"friends" | "requests">("friends");
   const {
+    user,
     friends,
     pendingFriendRequests,
     fetchFriends,
@@ -153,6 +172,7 @@ const Friends = () => {
         <div className="bg-secondary-bg rounded-lg shadow mb-6 border border-secondary-bg">
           <div className="p-4">
             <h2 className="text-lg font-semibold mb-2 text-text">Add Friend</h2>
+            <p className="text-md text-accent mb-4">{user?.tag}</p>
             <p className="text-sm text-secondary-text mb-4">
               Enter a friend's tag to send them a friend request
             </p>

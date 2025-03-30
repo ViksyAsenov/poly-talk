@@ -15,6 +15,7 @@ import ChatInterface from "./components/ChatInterface";
 import Friends from "./components/Friends";
 import Settings from "./components/Settings";
 import { pageTransition } from "./utils/animations";
+import Loader from "./components/Loader";
 
 const AnimatedRoutes = () => {
   const location = useLocation();
@@ -75,7 +76,7 @@ const App = () => {
   if (isLoading) {
     return (
       <div className="h-screen w-screen flex items-center justify-center bg-bg">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-accent"></div>
+        <Loader />
       </div>
     );
   }

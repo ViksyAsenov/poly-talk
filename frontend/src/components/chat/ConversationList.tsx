@@ -4,6 +4,7 @@ import { Conversation } from "../../types/chat";
 import { formatDistanceToNow } from "date-fns";
 import { useUserStore } from "../../store/userStore";
 import { useNavigate } from "react-router-dom";
+import Loader from "../Loader";
 
 interface ConversationItemProps {
   conversation: Conversation;
@@ -96,7 +97,7 @@ const ConversationList = () => {
     };
 
     load();
-  }, [fetchConversations, user?.languageId]);
+  }, []);
 
   const handleSelectConversation = (conversation: Conversation) => {
     setCurrentConversation(conversation);
@@ -111,12 +112,7 @@ const ConversationList = () => {
 
       <div className="flex-1 overflow-y-auto bg-bg">
         {isLoading ? (
-          <>
-            <ConversationSkeleton />
-            <ConversationSkeleton />
-            <ConversationSkeleton />
-            <ConversationSkeleton />
-          </>
+          <Loader />
         ) : conversations.length === 0 ? (
           <EmptyConversations />
         ) : (

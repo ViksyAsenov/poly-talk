@@ -31,25 +31,17 @@ const ChatInterface = () => {
 
   useEffect(() => {
     const initializeChat = async () => {
-      if (conversations.length === 0) {
-        await fetchConversations();
+      if (conversations.length === 0) return;
+
+      const conversation = conversationId
+        ? conversations.find((c) => c.id === conversationId)
+        : null;
+
+      if (conversation) {
+        setCurrentConversation(conversation);
+      } else if (isInitialLoad) {
+        navigate(`/chat/${conversations[0].id}`, { replace: true });
       }
-
-      // if (conversations.length > 0) {
-      //   if (conversationId) {
-      //     const conversation = conversations.find(
-      //       (c) => c.id === conversationId
-      //     );
-
-      //     if (conversation) {
-      //       setCurrentConversation(conversation);
-      //     } else if (isInitialLoad) {
-      //       navigate(`/chat/${conversations[0].id}`, { replace: true });
-      //     }
-      //   } else if (isInitialLoad) {
-      //     navigate(`/chat/${conversations[0].id}`, { replace: true });
-      //   }
-      // }
 
       setIsInitialLoad(false);
     };
@@ -58,9 +50,8 @@ const ChatInterface = () => {
   }, [
     conversations,
     conversationId,
-    navigate,
     setCurrentConversation,
-    fetchConversations,
+    navigate,
     isInitialLoad,
   ]);
 

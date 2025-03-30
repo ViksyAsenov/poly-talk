@@ -26,7 +26,12 @@ client.interceptors.response.use(
       return Promise.resolve(error.response);
     }
 
-    return Promise.reject(error);
+    return Promise.resolve({
+      data: {
+        success: false,
+        error: { message_error: "Something went wrong!" },
+      },
+    });
   }
 );
 
