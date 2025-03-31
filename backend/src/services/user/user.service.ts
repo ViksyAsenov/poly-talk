@@ -54,7 +54,7 @@ const getMinUserById = async (userId: string): Promise<IMinUser> => {
 
 const getOrCreateUserWithGoogle = async (profile: GoogleUser) => {
   const foundUser = (await db.select().from(Users).where(eq(Users.googleId, profile.id)))[0];
-
+  profile.name = profile.name.replace(/[^a-zA-Z0-9\s]/g, "");
   if (!foundUser) {
     const tag = await generateUserTag(profile.name);
 
@@ -94,8 +94,9 @@ const getOrCreateUserWithGoogle = async (profile: GoogleUser) => {
     updateObject.avatar = profile.picture;
   }
 
-  if (!foundUser) {
-    updateObject.displayName = profile.name.split(" ").join("").toLowerCase();
+  if (!customizedFields.includes("displayName")) {
+    updateObject.displayName = profile.name;
+    updateObject.tag = await generateUserTag(profile.name);
   }
 
   if (!customizedFields.includes("firstName")) {

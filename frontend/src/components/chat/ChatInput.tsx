@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
 import { useChatStore } from "../../store/chatStore";
 
 const ChatInput: React.FC = () => {
@@ -52,7 +52,7 @@ const ChatInput: React.FC = () => {
   return (
     <div className="pt-1 bg-bg">
       <div className="relative">
-        <div className="flex items-end rounded-lg border border-secondary-bg bg-secondary-bg p-2">
+        <div className="flex items-center rounded-lg border border-secondary-bg bg-secondary-bg p-2">
           <textarea
             ref={inputRef}
             value={message}

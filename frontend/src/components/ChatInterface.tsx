@@ -5,33 +5,31 @@ import { useChatStore } from "../store/chatStore";
 import { useEffect, useState } from "react";
 import { ArrowLeftIcon } from "@heroicons/react/24/solid";
 import { useParams, useNavigate } from "react-router-dom";
+import { useAppStore } from "../store/appStore";
 
 const ChatInterface = () => {
   const { conversationId } = useParams();
   const navigate = useNavigate();
+  const { isMobileView } = useAppStore();
   const {
     currentConversation,
     setCurrentConversation,
     conversations,
     fetchConversations,
   } = useChatStore();
-  const [isMobileView, setIsMobileView] = useState(false);
-  const [showChatOnMobile, setShowChatOnMobile] = useState(false);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
 
   useEffect(() => {
-    const checkMobile = () => {
-      setIsMobileView(window.innerWidth < 768);
+    const load = async () => {
+      await fetchConversations();
     };
 
-    checkMobile();
-    window.addEventListener("resize", checkMobile);
-    return () => window.removeEventListener("resize", checkMobile);
-  }, []);
+    load();
+  }, [fetchConversations]);
 
   useEffect(() => {
     const initializeChat = async () => {
-      if (conversations.length === 0) return;
+      if (conversations.length === 0 || isMobileView || !isInitialLoad) return;
 
       const conversation = conversationId
         ? conversations.find((c) => c.id === conversationId)
@@ -53,34 +51,36 @@ const ChatInterface = () => {
     setCurrentConversation,
     navigate,
     isInitialLoad,
+    isMobileView,
   ]);
 
   useEffect(() => {
     if (currentConversation && !isInitialLoad) {
       navigate(`/chat/${currentConversation.id}`, { replace: true });
-
-      if (isMobileView) {
-        setShowChatOnMobile(true);
-      }
     }
   }, [currentConversation, isMobileView, navigate, isInitialLoad]);
 
   const handleBack = () => {
-    setShowChatOnMobile(false);
+    navigate("/chat", { replace: true });
+    setCurrentConversation(null);
   };
 
   return (
     <div className="h-screen w-full bg-secondary-bg overflow-hidden">
       <div className="mx-auto h-full flex">
-        {(!isMobileView || !showChatOnMobile) && (
-          <div className="w-80 h-full flex-shrink-0">
+        {(!isMobileView || !currentConversation) && (
+          <div
+            className={`${
+              isMobileView ? "w-full" : "w-80"
+            } h-full flex-shrink-0`}
+          >
             <ConversationList />
           </div>
         )}
 
-        {(!isMobileView || showChatOnMobile) && (
+        {(!isMobileView || currentConversation) && (
           <div className="flex-1 h-full flex flex-col">
-            {isMobileView && showChatOnMobile && (
+            {isMobileView && currentConversation && (
               <div className="p-2 border-b border-secondary-bg flex-shrink-0 bg-bg">
                 <button
                   className="flex items-center text-secondary-text hover:text-text"

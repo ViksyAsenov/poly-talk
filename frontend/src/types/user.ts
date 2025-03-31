@@ -10,17 +10,21 @@ interface IMinUser {
   languageName?: string;
 }
 
+interface FriendRequestSent {
+  id: string;
+  receiver: IMinUser;
+  createdAt: Date;
+}
+
+interface FriendRequestReceived {
+  id: string;
+  sender: IMinUser;
+  createdAt: Date;
+}
+
 interface IFriendRequests {
-  sent: {
-    id: string;
-    receiver: IMinUser;
-    createdAt: Date;
-  }[];
-  received: {
-    id: string;
-    sender: IMinUser;
-    createdAt: Date;
-  }[];
+  sent: FriendRequestSent[];
+  received: FriendRequestReceived[];
 }
 
 interface Language {
@@ -29,4 +33,10 @@ interface Language {
   code: string;
 }
 
-export type { IMinUser, IFriendRequests, Language };
+export type {
+  IMinUser,
+  FriendRequestSent,
+  FriendRequestReceived,
+  IFriendRequests,
+  Language,
+};

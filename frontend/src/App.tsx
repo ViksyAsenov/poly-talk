@@ -6,7 +6,6 @@ import {
   useLocation,
   Link,
 } from "react-router-dom";
-import { AnimatePresence, motion } from "framer-motion";
 import { Toaster } from "react-hot-toast";
 import { useUserStore } from "./store/userStore";
 import { useEffect, useState } from "react";
@@ -14,29 +13,20 @@ import Login from "./components/Login";
 import ChatInterface from "./components/ChatInterface";
 import Friends from "./components/Friends";
 import Settings from "./components/Settings";
-import { pageTransition } from "./utils/animations";
-import Loader from "./components/Loader";
+import { useAppStore } from "./store/appStore";
 
 const AnimatedRoutes = () => {
   const location = useLocation();
 
   return (
-    <AnimatePresence mode="wait">
-      <motion.div
-        key={location.pathname}
-        {...pageTransition}
-        className="h-full w-full absolute"
-      >
-        <Routes location={location} key={location.pathname}>
-          <Route path="/" element={<Navigate to="/chat" />} />
-          <Route path="/chat" element={<ChatInterface />} />
-          <Route path="/chat/:conversationId" element={<ChatInterface />} />
-          <Route path="/friends" element={<Friends />} />
-          <Route path="/settings" element={<Settings />} />
-          <Route path="*" element={<div>Page not found</div>} />
-        </Routes>
-      </motion.div>
-    </AnimatePresence>
+    <Routes location={location} key={location.pathname}>
+      <Route path="/" element={<Navigate to="/chat" />} />
+      <Route path="/chat" element={<ChatInterface />} />
+      <Route path="/chat/:conversationId" element={<ChatInterface />} />
+      <Route path="/friends" element={<Friends />} />
+      <Route path="/settings" element={<Settings />} />
+      <Route path="*" element={<Navigate to="/" replace />} />{" "}
+    </Routes>
   );
 };
 
@@ -57,8 +47,19 @@ const NavButton = ({ to, label }: { to: string; label: string }) => {
 };
 
 const App = () => {
+  const { isMobileView, setIsMobileView } = useAppStore();
   const { isAuthenticated, checkAuth, fetchLanguages } = useUserStore();
   const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobileView(window.innerWidth < 768);
+    };
+
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, [setIsMobileView]);
 
   useEffect(() => {
     const load = async () => {
@@ -74,11 +75,7 @@ const App = () => {
   }, [checkAuth, fetchLanguages]);
 
   if (isLoading) {
-    return (
-      <div className="h-screen w-screen flex items-center justify-center bg-bg">
-        <Loader />
-      </div>
-    );
+    return null;
   }
 
   if (!isAuthenticated) {

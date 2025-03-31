@@ -1,26 +1,35 @@
 import { useState, useEffect } from "react";
 import { useUserStore } from "../store/userStore";
-import { IMinUser } from "../types/user";
-import { motion } from "framer-motion";
-import { pageTransition } from "../utils/animations";
+import {
+  FriendRequestReceived,
+  FriendRequestSent,
+  IMinUser,
+} from "../types/user";
 import { chatApi } from "../api/client";
 import { useNavigate } from "react-router-dom";
 
-const FriendItem = ({ friend }: { friend: IMinUser }) => {
+const FriendItem = ({
+  friend,
+  onSelect,
+  isSelected,
+}: {
+  friend: IMinUser;
+  onSelect: (id: string) => void;
+  isSelected: boolean;
+}) => {
   const { removeFriend } = useUserStore();
   const navigate = useNavigate();
 
   const messageFriend = async (id: string) => {
     const response = await chatApi.createDirectConversation(id);
     const { success, data } = response.data;
-
     if (success) {
       navigate(`/chat/${data.id}`);
     }
   };
 
   return (
-    <div className="flex items-center justify-between p-4 border-b border-secondary-bg">
+    <div className="flex items-center justify-between p-4 border rounded-md bg-secondary-bg mb-2">
       <div className="flex items-center">
         <div className="w-10 h-10 rounded-full bg-secondary-bg flex items-center justify-center text-text overflow-hidden">
           {friend.avatar ? (
@@ -38,90 +47,80 @@ const FriendItem = ({ friend }: { friend: IMinUser }) => {
           <p className="text-sm text-secondary-text">{friend.tag}</p>
         </div>
       </div>
-      <button
-        onClick={() => messageFriend(friend.id)}
-        className="text-error hover:bg-accent hover:bg-opacity-10 px-3 py-1 rounded-md text-sm"
-      >
-        Message
-      </button>
-      <button
-        onClick={() => removeFriend(friend.id)}
-        className="text-error hover:bg-accent hover:bg-opacity-10 px-3 py-1 rounded-md text-sm"
-      >
-        Remove
-      </button>
+      <div className="flex gap-2 items-center">
+        <button
+          onClick={() => messageFriend(friend.id)}
+          className="text-white bg-blue-500 px-3 py-1 rounded-md text-sm hover:bg-blue-600"
+        >
+          Message
+        </button>
+        <button
+          onClick={() => removeFriend(friend.id)}
+          className="text-white bg-red-500 px-3 py-1 rounded-md text-sm hover:bg-red-600"
+        >
+          Remove
+        </button>
+        <input
+          type="checkbox"
+          checked={isSelected}
+          onChange={() => onSelect(friend.id)}
+        />
+      </div>
     </div>
   );
 };
 
-const FriendRequestItem = ({ request }: { request: any }) => {
+type RequestItemProps =
+  | { request: FriendRequestReceived; type: "received" }
+  | { request: FriendRequestSent; type: "sent" };
+
+const RequestItem = ({ request, type }: RequestItemProps) => {
   const { acceptFriendRequest, rejectFriendRequest } = useUserStore();
 
+  const user = type === "received" ? request.sender : request.receiver;
+
   return (
-    <div className="flex items-center justify-between p-4 border-b border-secondary-bg">
+    <div className="flex items-center justify-between p-4 border rounded-md bg-secondary-bg mb-2">
       <div className="flex items-center">
         <div className="w-10 h-10 rounded-full bg-secondary-bg flex items-center justify-center text-text overflow-hidden">
-          {request.sender.avatar ? (
+          {user.avatar ? (
             <img
-              src={request.sender.avatar}
-              alt={request.sender.displayName}
+              src={user.avatar}
+              alt={user.displayName}
               className="w-full h-full object-cover"
             />
           ) : (
-            request.sender.displayName?.charAt(0).toUpperCase()
+            user.displayName?.charAt(0).toUpperCase()
           )}
         </div>
         <div className="ml-3">
-          <h3 className="font-medium text-text">
-            {request.sender.displayName}
-          </h3>
-          <p className="text-sm text-secondary-text">@{request.sender.tag}</p>
+          <h3 className="font-medium text-text">{user.displayName}</h3>
+          <p className="text-sm text-secondary-text">@{user.tag}</p>
         </div>
       </div>
-      <div className="flex space-x-2">
-        <button
-          onClick={() => acceptFriendRequest(request.id)}
-          className="bg-accent text-white px-3 py-1 rounded-md text-sm hover:bg-blue-700"
-        >
-          Accept
-        </button>
-        <button
-          onClick={() => rejectFriendRequest(request.id)}
-          className="bg-secondary-bg text-text px-3 py-1 rounded-md text-sm hover:bg-gray-300"
-        >
-          Reject
-        </button>
-      </div>
+      {type === "received" ? (
+        <div className="flex gap-2">
+          <button
+            onClick={() => acceptFriendRequest(request.id)}
+            className="bg-accent text-white px-3 py-1 rounded-md text-sm hover:bg-blue-700"
+          >
+            Accept
+          </button>
+          <button
+            onClick={() => rejectFriendRequest(request.id)}
+            className="bg-secondary-bg text-text px-3 py-1 rounded-md text-sm hover:bg-gray-300"
+          >
+            Reject
+          </button>
+        </div>
+      ) : (
+        <div className="flex gap-2">
+          <span className="text-sm text-secondary-text italic">Pending</span>
+        </div>
+      )}
     </div>
   );
 };
-
-const SentRequestItem = ({ request }: { request: any }) => (
-  <div className="flex items-center justify-between p-4 border-b border-secondary-bg">
-    <div className="flex items-center">
-      <div className="w-10 h-10 rounded-full bg-secondary-bg flex items-center justify-center text-text overflow-hidden">
-        {request.receiver.avatar ? (
-          <img
-            src={request.receiver.avatar}
-            alt={request.receiver.displayName}
-            className="w-full h-full object-cover"
-          />
-        ) : (
-          request.receiver.displayName?.charAt(0).toUpperCase()
-        )}
-      </div>
-      <div className="ml-3">
-        <h3 className="font-medium text-text">
-          {request.receiver.displayName}
-        </h3>
-        <p className="text-sm text-secondary-text">@{request.receiver.tag}</p>
-      </div>
-    </div>
-    <div className="flex space-x-2">
-      <span className="text-sm text-secondary-text italic">Pending</span>
-    </div>
-  </div>
-);
 
 const EmptyState = ({ message }: { message: string }) => (
   <div className="flex flex-col items-center justify-center p-8 text-center">
@@ -133,6 +132,10 @@ const Friends = () => {
   const [tag, setTag] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<"friends" | "requests">("friends");
+  const [selectedFriends, setSelectedFriends] = useState<string[]>([]);
+  const [groupName, setGroupName] = useState("");
+  const navigate = useNavigate();
+
   const {
     user,
     friends,
@@ -149,7 +152,6 @@ const Friends = () => {
 
   const handleSendRequest = async () => {
     if (!tag) return;
-
     setIsLoading(true);
     try {
       await sendFriendRequest(tag);
@@ -161,112 +163,134 @@ const Friends = () => {
     }
   };
 
-  return (
-    <motion.div
-      {...pageTransition}
-      className="p-6 bg-bg flex-1 overflow-y-auto"
-    >
-      <div className="max-w-xl mx-auto">
-        <h1 className="text-2xl font-bold mb-6 text-text">Friends</h1>
+  const toggleFriendSelection = (id: string) => {
+    setSelectedFriends((prev) =>
+      prev.includes(id)
+        ? prev.filter((friendId) => friendId !== id)
+        : [...prev, id]
+    );
+  };
 
-        <div className="bg-secondary-bg rounded-lg shadow mb-6 border border-secondary-bg">
-          <div className="p-4">
-            <h2 className="text-lg font-semibold mb-2 text-text">Add Friend</h2>
-            <p className="text-md text-accent mb-4">{user?.tag}</p>
-            <p className="text-sm text-secondary-text mb-4">
-              Enter a friend's tag to send them a friend request
-            </p>
-            <div className="flex">
-              <input
-                type="text"
-                value={tag}
-                onChange={(e) => setTag(e.target.value)}
-                placeholder="Enter username#tag"
-                className="flex-1 px-3 py-2 border border-secondary-bg rounded-l-lg bg-bg focus:outline-none focus:ring-2 focus:ring-accent text-text"
-              />
-              <button
-                onClick={handleSendRequest}
-                disabled={!tag || isLoading}
-                className="bg-accent text-white px-4 py-2 rounded-r-lg font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-accent disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isLoading ? "Sending..." : "Send"}
-              </button>
-            </div>
-          </div>
+  const createGroup = async (groupName: string, participantIds: string[]) => {
+    const response = await chatApi.createGroupConversation(
+      groupName,
+      participantIds
+    );
+
+    const { success, data } = response.data;
+
+    if (success) {
+      navigate(`/chat/${data.id}`);
+    }
+  };
+
+  return (
+    <div className="h-screen w-full bg-secondary-bg overflow-hidden">
+      <div className="bg-bg p-6 rounded-lg shadow border border-secondary-bg mb-6">
+        <h2 className="text-xl font-semibold mb-2 text-text">Add Friend</h2>
+        <p className="text-md text-accent mb-4">{user?.tag}</p>
+        <div className="flex gap-2">
+          <input
+            type="text"
+            placeholder="Enter friend tag"
+            value={tag}
+            onChange={(e) => setTag(e.target.value)}
+            className="flex-1 p-2 border rounded-md"
+          />
+          <button
+            onClick={handleSendRequest}
+            className="bg-accent text-white px-4 py-2 rounded-md whitespace-nowrap"
+            disabled={isLoading}
+          >
+            {isLoading ? "Sending..." : "Send Request"}
+          </button>
+        </div>
+      </div>
+
+      <div className="bg-bg p-6 rounded-lg shadow border border-secondary-bg mb-6">
+        <div className="flex border-b border-secondary-bg mb-4">
+          <button
+            onClick={() => setActiveTab("friends")}
+            className={`flex-1 py-3 text-center font-medium ${
+              activeTab === "friends"
+                ? "text-accent border-b-2 border-accent"
+                : "text-secondary-text hover:bg-gray-200"
+            }`}
+          >
+            Friends ({friends.length})
+          </button>
+          <button
+            onClick={() => setActiveTab("requests")}
+            className={`flex-1 py-3 text-center font-medium ${
+              activeTab === "requests"
+                ? "text-accent border-b-2 border-accent"
+                : "text-secondary-text hover:bg-gray-200"
+            }`}
+          >
+            Requests (
+            {pendingFriendRequests.received.length +
+              pendingFriendRequests.sent.length}
+            )
+          </button>
         </div>
 
-        <div className="bg-secondary-bg rounded-lg shadow border border-secondary-bg">
-          <div className="flex border-b border-secondary-bg">
-            <button
-              onClick={() => setActiveTab("friends")}
-              className={`flex-1 py-3 text-center font-medium ${
-                activeTab === "friends"
-                  ? "text-accent border-b-2 border-accent"
-                  : "text-secondary-text hover:bg-gray-200"
-              }`}
-            >
-              Friends ({friends.length})
-            </button>
-            <button
-              onClick={() => setActiveTab("requests")}
-              className={`flex-1 py-3 text-center font-medium ${
-                activeTab === "requests"
-                  ? "text-accent border-b-2 border-accent"
-                  : "text-secondary-text hover:bg-gray-200"
-              }`}
-            >
-              Requests (
-              {pendingFriendRequests.received.length +
-                pendingFriendRequests.sent.length}
-              )
-            </button>
-          </div>
-
+        <div className="max-h-96 overflow-y-auto">
           {activeTab === "friends" ? (
-            <div key="friends" className="max-h-96 overflow-y-auto">
-              {friends.length === 0 ? (
-                <EmptyState message="You don't have any friends yet. Add some friends to get started!" />
-              ) : (
-                friends.map((friend) => (
-                  <FriendItem key={friend.id} friend={friend} />
-                ))
-              )}
-            </div>
+            friends.length === 0 ? (
+              <EmptyState message="You don't have any friends yet. Add some friends to get started!" />
+            ) : (
+              friends.map((friend) => (
+                <FriendItem
+                  key={friend.id}
+                  friend={friend}
+                  onSelect={toggleFriendSelection}
+                  isSelected={selectedFriends.includes(friend.id)}
+                />
+              ))
+            )
+          ) : pendingFriendRequests.received.length === 0 &&
+            pendingFriendRequests.sent.length === 0 ? (
+            <EmptyState message="You don't have any pending friend requests." />
           ) : (
-            <div key="requests" className="max-h-96 overflow-y-auto">
-              {pendingFriendRequests.received.length === 0 &&
-              pendingFriendRequests.sent.length === 0 ? (
-                <EmptyState message="You don't have any pending friend requests." />
-              ) : (
-                <>
-                  {pendingFriendRequests.received.length > 0 && (
-                    <div className="p-2 bg-gray-100">
-                      <h3 className="text-sm font-medium text-secondary-text px-2">
-                        Received Requests
-                      </h3>
-                    </div>
-                  )}
-                  {pendingFriendRequests.received.map((request) => (
-                    <FriendRequestItem key={request.id} request={request} />
-                  ))}
-
-                  {pendingFriendRequests.sent.length > 0 && (
-                    <div className="p-2 bg-gray-100">
-                      <h3 className="text-sm font-medium text-secondary-text px-2">
-                        Sent Requests
-                      </h3>
-                    </div>
-                  )}
-                  {pendingFriendRequests.sent.map((request) => (
-                    <SentRequestItem key={request.id} request={request} />
-                  ))}
-                </>
-              )}
-            </div>
+            <>
+              {pendingFriendRequests.received.map((request) => (
+                <RequestItem
+                  key={request.id}
+                  request={request}
+                  type="received"
+                />
+              ))}
+              {pendingFriendRequests.sent.map((request) => (
+                <RequestItem key={request.id} request={request} type="sent" />
+              ))}
+            </>
           )}
         </div>
       </div>
-    </motion.div>
+
+      <div className="bg-bg p-6 rounded-lg shadow border border-secondary-bg">
+        <h2 className="text-xl font-semibold mb-2 text-text">Create Group</h2>
+        <div className="mb-4">
+          <label className="block text-sm text-secondary-text mb-1">
+            Selected Friends: {selectedFriends.length}
+          </label>
+          <input
+            type="text"
+            placeholder="Group Name"
+            value={groupName}
+            onChange={(e) => setGroupName(e.target.value)}
+            className="w-full p-2 border rounded-md"
+          />
+        </div>
+        <button
+          onClick={() => createGroup(groupName, selectedFriends)}
+          className="w-full bg-accent text-white py-2 rounded-md"
+          disabled={!groupName || selectedFriends.length === 0}
+        >
+          Create Group
+        </button>
+      </div>
+    </div>
   );
 };
 

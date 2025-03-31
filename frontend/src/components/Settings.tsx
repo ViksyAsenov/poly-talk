@@ -1,8 +1,6 @@
 import { useState, useEffect } from "react";
 import { useUserStore } from "../store/userStore";
 import { Language } from "../types/user";
-import { motion } from "framer-motion";
-import { pageTransition } from "../utils/animations";
 
 const Settings = () => {
   const { user, updateUser, languages, fetchLanguages, logout } =
@@ -11,7 +9,6 @@ const Settings = () => {
   const [selectedLanguage, setSelectedLanguage] = useState<string | null>(null);
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -29,19 +26,12 @@ const Settings = () => {
   const handleUpdateProfile = async () => {
     if (!user) return;
 
-    setIsLoading(true);
-    try {
-      await updateUser(
-        displayName,
-        firstName,
-        lastName,
-        selectedLanguage ?? undefined
-      );
-    } catch (error) {
-      console.error("Error updating profile:", error);
-    } finally {
-      setIsLoading(false);
-    }
+    await updateUser(
+      displayName,
+      firstName,
+      lastName,
+      selectedLanguage ?? undefined
+    );
   };
 
   const handleLanguageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -52,10 +42,7 @@ const Settings = () => {
   if (!user) return null;
 
   return (
-    <motion.div
-      {...pageTransition}
-      className="p-6 bg-bg flex-1 overflow-y-auto"
-    >
+    <div className="h-screen w-full bg-secondary-bg overflow-hidden">
       <div className="max-w-lg mx-auto">
         <h1 className="text-2xl font-bold mb-6 text-text">Settings</h1>
 
@@ -121,10 +108,9 @@ const Settings = () => {
 
           <button
             onClick={handleUpdateProfile}
-            disabled={isLoading}
             className="w-full bg-accent text-white py-2 rounded-lg font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {isLoading ? "Saving..." : "Save Changes"}
+            Save Changes
           </button>
         </div>
 
@@ -139,7 +125,7 @@ const Settings = () => {
           </button>
         </div>
       </div>
-    </motion.div>
+    </div>
   );
 };
 

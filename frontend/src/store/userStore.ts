@@ -147,6 +147,7 @@ const useUserStore = create<UserState>((set, get) => ({
 
     if (success) {
       toast.success("Successfully logged out!");
+      window.location.reload();
     }
   },
 }));

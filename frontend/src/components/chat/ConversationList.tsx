@@ -1,10 +1,8 @@
-import { useState, useEffect } from "react";
 import { useChatStore } from "../../store/chatStore";
 import { Conversation } from "../../types/chat";
 import { formatDistanceToNow } from "date-fns";
 import { useUserStore } from "../../store/userStore";
 import { useNavigate } from "react-router-dom";
-import Loader from "../Loader";
 
 interface ConversationItemProps {
   conversation: Conversation;
@@ -79,29 +77,13 @@ const EmptyConversations = () => (
 );
 
 const ConversationList = () => {
-  const { user } = useUserStore();
   const navigate = useNavigate();
-  const {
-    conversations,
-    currentConversation,
-    fetchConversations,
-    setCurrentConversation,
-  } = useChatStore();
-  const [isLoading, setIsLoading] = useState(false);
-
-  useEffect(() => {
-    const load = async () => {
-      setIsLoading(true);
-      await fetchConversations();
-      setIsLoading(false);
-    };
-
-    load();
-  }, []);
+  const { conversations, currentConversation, setCurrentConversation } =
+    useChatStore();
 
   const handleSelectConversation = (conversation: Conversation) => {
     setCurrentConversation(conversation);
-    navigate(`/chat/${conversation.id}`);
+    navigate(`/chat/${conversation.id}`, { replace: true });
   };
 
   return (
@@ -111,9 +93,7 @@ const ConversationList = () => {
       </div>
 
       <div className="flex-1 overflow-y-auto bg-bg">
-        {isLoading ? (
-          <Loader />
-        ) : conversations.length === 0 ? (
+        {conversations.length === 0 ? (
           <EmptyConversations />
         ) : (
           conversations.map((conversation) => (
