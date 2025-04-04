@@ -23,7 +23,7 @@ const ConversationItem = ({
         .displayName;
 
   const profilePicture = conversation.isGroup
-    ? conversation.name
+    ? (conversation.name ?? "").slice(0, 2)
     : conversation.participants.find((p) => p.user.id !== user?.id)?.user
         .avatar;
 
@@ -87,8 +87,8 @@ const ConversationList = () => {
   };
 
   return (
-    <div className="flex flex-col h-full">
-      <div className="p-4 border-b border-secondary-bg bg-bg flex-shrink-0">
+    <div className="flex flex-col h-full border-r border-accent">
+      <div className="p-4 border-b border-accent bg-bg flex-shrink-0">
         <h3 className="text-lg font-semibold text-text">Conversations</h3>
       </div>
 

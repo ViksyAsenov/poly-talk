@@ -29,7 +29,7 @@ const FriendItem = ({
   };
 
   return (
-    <div className="flex items-center justify-between p-4 border rounded-md bg-secondary-bg mb-2">
+    <div className="flex items-center justify-between p-4 border border-accent rounded-md bg-secondary-bg mb-2">
       <div className="flex items-center">
         <div className="w-10 h-10 rounded-full bg-secondary-bg flex items-center justify-center text-text overflow-hidden">
           {friend.avatar ? (
@@ -50,13 +50,13 @@ const FriendItem = ({
       <div className="flex gap-2 items-center">
         <button
           onClick={() => messageFriend(friend.id)}
-          className="text-white bg-blue-500 px-3 py-1 rounded-md text-sm hover:bg-blue-600"
+          className="text-white bg-accent px-3 py-1 rounded-md text-sm hover:bg-accent-hover"
         >
           Message
         </button>
         <button
           onClick={() => removeFriend(friend.id)}
-          className="text-white bg-red-500 px-3 py-1 rounded-md text-sm hover:bg-red-600"
+          className="text-white bg-red px-3 py-1 rounded-md text-sm hover:bg-red-hover"
         >
           Remove
         </button>
@@ -102,13 +102,13 @@ const RequestItem = ({ request, type }: RequestItemProps) => {
         <div className="flex gap-2">
           <button
             onClick={() => acceptFriendRequest(request.id)}
-            className="bg-accent text-white px-3 py-1 rounded-md text-sm hover:bg-blue-700"
+            className="bg-accent text-white px-3 py-1 rounded-md text-sm hover:bg-accent-hover"
           >
             Accept
           </button>
           <button
             onClick={() => rejectFriendRequest(request.id)}
-            className="bg-secondary-bg text-text px-3 py-1 rounded-md text-sm hover:bg-gray-300"
+            className="bg-secondary-bg text-text px-3 py-1 rounded-md text-sm hover:bg-gray-hover"
           >
             Reject
           </button>
@@ -214,7 +214,7 @@ const Friends = () => {
             className={`flex-1 py-3 text-center font-medium ${
               activeTab === "friends"
                 ? "text-accent border-b-2 border-accent"
-                : "text-secondary-text hover:bg-gray-200"
+                : "text-gray hover:bg-gray-hover"
             }`}
           >
             Friends ({friends.length})
@@ -224,7 +224,7 @@ const Friends = () => {
             className={`flex-1 py-3 text-center font-medium ${
               activeTab === "requests"
                 ? "text-accent border-b-2 border-accent"
-                : "text-secondary-text hover:bg-gray-200"
+                : "text-gray hover:bg-gray-hover"
             }`}
           >
             Requests (

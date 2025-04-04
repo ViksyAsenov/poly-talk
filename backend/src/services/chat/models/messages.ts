@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
+import { pgTable, primaryKey, text, timestamp, uuid } from "drizzle-orm/pg-core";
 import { Conversations } from "./conversations";
 import { Users } from "@services/user/models";
 import { Languages } from "@services/language/models";
@@ -16,17 +16,20 @@ const Messages = pgTable("messages", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
-const MessageTranslations = pgTable("message_translations", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  messageId: uuid("message_id")
-    .references(() => Messages.id)
-    .notNull(),
-  targetLanguageId: uuid("target_language_id")
-    .references(() => Languages.id)
-    .notNull(),
-  translatedContent: text("translated_content").notNull(),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-});
+const MessageTranslations = pgTable(
+  "message_translations",
+  {
+    messageId: uuid("message_id")
+      .references(() => Messages.id)
+      .notNull(),
+    targetLanguageId: uuid("target_language_id")
+      .references(() => Languages.id)
+      .notNull(),
+    translatedContent: text("translated_content").notNull(),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (table) => [primaryKey({ columns: [table.messageId, table.targetLanguageId] })],
+);
 
 export type Message = InferSelectModel<typeof Messages>;
 

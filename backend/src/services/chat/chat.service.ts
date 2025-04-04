@@ -1,5 +1,5 @@
 import { db } from "@config/db";
-import { eq, and, desc } from "drizzle-orm";
+import { eq, and, desc, sql } from "drizzle-orm";
 
 import { getMinUserById, areFriends } from "@services/user";
 import { getLanguageById, translateMessage } from "@services/language";
@@ -137,6 +137,14 @@ const createGroupConversation = async (userId: string, name: string, participant
     throw new AppError(ChatErrors.DUPLICATE_PARTICIPANTS);
   }
 
+  if (participantIds.includes(userId)) {
+    throw new AppError(ChatErrors.CANNOT_MESSAGE_SELF);
+  }
+
+  if (participantIds.length < 3) {
+    throw new AppError(ChatErrors.INVALID_GROUP_DATA);
+  }
+
   const user = await getMinUserById(userId);
 
   const conversation = (
@@ -205,19 +213,9 @@ const getConversationDetails = async (userId: string, conversationId: string): P
     if (!user.languageId) {
       previewMessage = latestMessage.content;
     } else {
-      const translation = (
-        await db
-          .select()
-          .from(MessageTranslations)
-          .where(
-            and(
-              eq(MessageTranslations.messageId, latestMessage.id),
-              eq(MessageTranslations.targetLanguageId, user.languageId),
-            ),
-          )
-      )[0];
+      const translation = await getMessageTranslation(userId, latestMessage, user.languageId);
 
-      previewMessage = translation ? translation.translatedContent : latestMessage.content;
+      previewMessage = translation.isTranslated ? translation.content : latestMessage.content;
     }
   }
 
@@ -255,19 +253,9 @@ const getUserConversations = async (userId: string): Promise<ConversationData[]>
         if (!user.languageId) {
           previewMessage = latestMessage.content;
         } else {
-          const translation = (
-            await db
-              .select()
-              .from(MessageTranslations)
-              .where(
-                and(
-                  eq(MessageTranslations.messageId, latestMessage.id),
-                  eq(MessageTranslations.targetLanguageId, user.languageId),
-                ),
-              )
-          )[0];
+          const translation = await getMessageTranslation(userId, latestMessage, user.languageId);
 
-          previewMessage = translation ? translation.translatedContent : latestMessage.content;
+          previewMessage = translation.isTranslated ? translation.content : latestMessage.content;
         }
       }
 
@@ -338,48 +326,10 @@ const sendMessage = async (userId: string, conversationId: string, content: stri
     };
 
     if (participantData.languageId) {
-      try {
-        const existingTranslation = (
-          await db
-            .select()
-            .from(MessageTranslations)
-            .where(
-              and(
-                eq(MessageTranslations.messageId, message.id),
-                eq(MessageTranslations.targetLanguageId, participantData.languageId),
-              ),
-            )
-        )[0];
+      const translation = await getMessageTranslation(participantData.id, message, participantData.languageId);
 
-        if (existingTranslation) {
-          messageData.displayContent = existingTranslation.translatedContent;
-          messageData.isTranslated = true;
-        } else {
-          const translatedContent = await translateMessage(message.content, participantData.languageId);
-
-          const translation = (
-            await db
-              .insert(MessageTranslations)
-              .values({
-                messageId: message.id,
-                targetLanguageId: participantData.languageId,
-                translatedContent,
-              })
-              .returning()
-          )[0];
-
-          if (!translation) {
-            if (!translation) {
-              throw new AppError(GenericErrors.UNEXPECTED_ERROR, { translation });
-            }
-          }
-
-          messageData.displayContent = translation.translatedContent;
-          messageData.isTranslated = true;
-        }
-      } catch (error) {
-        logger.error({ error }, "Translation error");
-      }
+      messageData.displayContent = translation.content;
+      messageData.isTranslated = translation.isTranslated;
     }
 
     emitToUser(participant.user.id, "chat:message", { conversationId: conversation.id, message: messageData });
@@ -421,6 +371,12 @@ const getMessageTranslation = async (userId: string, message: Message, languageI
             messageId: message.id,
             targetLanguageId: languageId,
             translatedContent,
+          })
+          .onConflictDoUpdate({
+            target: [MessageTranslations.messageId, MessageTranslations.targetLanguageId],
+            set: {
+              translatedContent: sql`${MessageTranslations.translatedContent}`,
+            },
           })
           .returning()
       )[0];

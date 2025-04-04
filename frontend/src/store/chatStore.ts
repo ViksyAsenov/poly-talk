@@ -16,6 +16,11 @@ interface ChatState {
   addMessage: (conversationId: string, message: Message) => void;
   sendMessage: (conversationId: string, content: string) => Promise<void>;
   deleteMessage: (messageId: string) => Promise<void>;
+
+  changeGroupConversationName: (id: string, name: string) => Promise<void>;
+  makeParticipantAdmin: (id: string, userId: string) => Promise<void>;
+  addParticipant: (id: string, userId: string) => Promise<void>;
+  removeParticipant: (id: string, userId: string) => Promise<void>;
 }
 
 export const useChatStore = create<ChatState>((set, get) => ({
@@ -76,6 +81,69 @@ export const useChatStore = create<ChatState>((set, get) => ({
       }));
 
       toast.success("Message deleted successfully");
+    }
+  },
+
+  changeGroupConversationName: async (id: string, name) => {
+    const response = await chatApi.updateGroupConversationName(id, name);
+
+    const { success, data } = response.data;
+
+    if (success) {
+      set({ currentConversation: data });
+      set({
+        conversations: get().conversations.map((c) => (c.id === id ? data : c)),
+      });
+
+      toast.success("Group name changed successfully");
+    }
+  },
+  makeParticipantAdmin: async (id, userId) => {
+    const response = await chatApi.makeParticipantAdmin(id, userId);
+
+    const { success, data } = response.data;
+
+    if (success) {
+      set({ currentConversation: data });
+      set({
+        conversations: get().conversations.map((c) => (c.id === id ? data : c)),
+      });
+
+      toast.success("Participant is now an admin");
+    }
+  },
+  addParticipant: async (id, userId) => {
+    const response = await chatApi.addParticipantToGroupConversation(
+      id,
+      userId
+    );
+
+    const { success, data } = response.data;
+
+    if (success) {
+      set({ currentConversation: data });
+      set({
+        conversations: get().conversations.map((c) => (c.id === id ? data : c)),
+      });
+
+      toast.success("Participant added successfully");
+    }
+  },
+  removeParticipant: async (id, userId) => {
+    const response = await chatApi.removeParticipantFromGroupConversation(
+      id,
+      userId
+    );
+
+    const { success, data } = response.data;
+
+    if (success) {
+      set({ currentConversation: data });
+      set({
+        conversations: get().conversations.map((c) => (c.id === id ? data : c)),
+      });
+
+      toast.success("Participant removed successfully");
     }
   },
 }));

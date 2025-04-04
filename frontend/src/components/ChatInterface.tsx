@@ -6,11 +6,13 @@ import { useEffect, useState } from "react";
 import { ArrowLeftIcon } from "@heroicons/react/24/solid";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAppStore } from "../store/appStore";
+import { useUserStore } from "../store/userStore";
 
 const ChatInterface = () => {
   const { conversationId } = useParams();
   const navigate = useNavigate();
   const { isMobileView } = useAppStore();
+  const { user } = useUserStore();
   const {
     currentConversation,
     setCurrentConversation,
@@ -25,7 +27,7 @@ const ChatInterface = () => {
     };
 
     load();
-  }, [fetchConversations]);
+  }, [fetchConversations, user?.languageId]);
 
   useEffect(() => {
     const initializeChat = async () => {
@@ -81,7 +83,7 @@ const ChatInterface = () => {
         {(!isMobileView || currentConversation) && (
           <div className="flex-1 h-full flex flex-col">
             {isMobileView && currentConversation && (
-              <div className="p-2 border-b border-secondary-bg flex-shrink-0 bg-bg">
+              <div className="p-2 border-b border-accent flex-shrink-0 bg-bg">
                 <button
                   className="flex items-center text-secondary-text hover:text-text"
                   onClick={handleBack}

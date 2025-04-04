@@ -50,9 +50,9 @@ const ChatInput: React.FC = () => {
   if (!currentConversation) return null;
 
   return (
-    <div className="pt-1 bg-bg">
+    <div className="bg-bg">
       <div className="relative">
-        <div className="flex items-center rounded-lg border border-secondary-bg bg-secondary-bg p-2">
+        <div className="flex items-center border-t border-accent bg-secondary-bg p-2">
           <textarea
             ref={inputRef}
             value={message}
@@ -67,11 +67,7 @@ const ChatInput: React.FC = () => {
           <button
             onClick={handleSend}
             disabled={!message.trim() || isLoading}
-            className={`ml-1 p-2 rounded-full ${
-              message.trim() && !isLoading
-                ? "bg-accent text-white hover:bg-blue-700"
-                : "bg-gray-300 text-secondary-text cursor-not-allowed"
-            }`}
+            className="ml-1 p-2 rounded-full bg-accent text-white hover:bg-accent-hover"
             aria-label="Send message"
           >
             Send
