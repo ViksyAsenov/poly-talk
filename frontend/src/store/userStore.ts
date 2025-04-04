@@ -10,12 +10,7 @@ interface UserState {
   pendingFriendRequests: IFriendRequests;
   languages: Language[];
 
-  updateUser: (
-    displayName?: string,
-    firstName?: string,
-    lastName?: string,
-    languageId?: string
-  ) => Promise<void>;
+  updateUser: (displayName?: string, languageId?: string) => Promise<void>;
 
   fetchFriends: () => Promise<void>;
   fetchPendingFriendRequests: () => Promise<void>;
@@ -39,13 +34,8 @@ const useUserStore = create<UserState>((set, get) => ({
   pendingFriendRequests: { sent: [], received: [] },
   languages: [],
 
-  updateUser: async (displayName, firstName, lastName, languageId) => {
-    const response = await userApi.updateMe(
-      displayName,
-      firstName,
-      lastName,
-      languageId
-    );
+  updateUser: async (displayName, languageId) => {
+    const response = await userApi.updateMe(displayName, languageId);
 
     const { success, data } = response.data;
 

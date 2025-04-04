@@ -4,8 +4,6 @@ interface IMinUser {
   avatar: string;
   displayName: string;
   tag: string;
-  firstName: string;
-  lastName: string;
   languageId: string | null;
   languageName?: string;
 }

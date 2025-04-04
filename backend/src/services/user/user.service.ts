@@ -45,8 +45,6 @@ const getMinUserById = async (userId: string): Promise<IMinUser> => {
     displayName: user.displayName,
     email: user.email,
     tag: user.tag,
-    firstName: user.firstName,
-    lastName: user.lastName,
     languageId: user.languageId,
     languageName: language?.name,
   };
@@ -67,8 +65,6 @@ const getOrCreateUserWithGoogle = async (profile: GoogleUser) => {
           avatar: profile.picture,
           email: profile.email,
           displayName: profile.name,
-          firstName: profile.given_name,
-          lastName: profile.family_name,
           customizedFields: [],
         })
         .returning()
@@ -99,14 +95,6 @@ const getOrCreateUserWithGoogle = async (profile: GoogleUser) => {
     updateObject.tag = await generateUserTag(profile.name);
   }
 
-  if (!customizedFields.includes("firstName")) {
-    updateObject.firstName = profile.given_name;
-  }
-
-  if (!customizedFields.includes("lastName")) {
-    updateObject.lastName = profile.family_name;
-  }
-
   await db.update(Users).set(updateObject).where(eq(Users.id, foundUser.id));
 
   return await getUserById(foundUser.id);
@@ -134,14 +122,6 @@ const updateUserProfile = async (userId: string, profileData: Partial<NewUser>) 
   if (profileData.displayName) {
     fieldsToUpdate.displayName = profileData.displayName;
     fieldsToUpdate.tag = await generateUserTag(profileData.displayName);
-  }
-
-  if (profileData.firstName) {
-    fieldsToUpdate.firstName = profileData.firstName;
-  }
-
-  if (profileData.lastName) {
-    fieldsToUpdate.lastName = profileData.lastName;
   }
 
   Object.keys(fieldsToUpdate).forEach((field) => {

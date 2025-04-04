@@ -10,16 +10,9 @@ const authApi = {
 
 const userApi = {
   getMe: () => client.get<APIResponse<IMinUser>>("/user/me"),
-  updateMe: (
-    displayName?: string,
-    firstName?: string,
-    lastName?: string,
-    languageId?: string
-  ) =>
+  updateMe: (displayName?: string, languageId?: string) =>
     client.patch<APIResponse<IMinUser>>("/user/me", {
       displayName,
-      firstName,
-      lastName,
       languageId,
     }),
   sendFriendRequest: (tag: string) => client.post("/user/friends", { tag }),
