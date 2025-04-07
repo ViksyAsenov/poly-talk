@@ -14,6 +14,8 @@ import ChatInterface from "./components/ChatInterface";
 import Friends from "./components/Friends";
 import { useAppStore } from "./store/appStore";
 import Settings from "./components/Settings";
+import ThemeToggle from "./components/ThemeToggle";
+import { useChatStore } from "./store/chatStore";
 
 const RoutesHandler = () => {
   const location = useLocation();
@@ -36,7 +38,7 @@ const NavButton = ({ to, label }: { to: string; label: string }) => {
   return (
     <Link
       to={to}
-      className={`mb-2 px-2 py-1 rounded transition-colors duration-200 items-center text-center ${
+      className={`px-2 py-1 rounded transition-colors duration-200 items-center text-center ${
         isActive ? "bg-accent text-white" : "text-text bg-secondary-bg"
       }`}
     >
@@ -46,8 +48,9 @@ const NavButton = ({ to, label }: { to: string; label: string }) => {
 };
 
 const App = () => {
-  const { setIsMobileView } = useAppStore();
+  const { isMobileView, setIsMobileView } = useAppStore();
   const { user, isAuthenticated, checkAuth, fetchLanguages } = useUserStore();
+  const { currentConversation } = useChatStore();
   const [isLoading, setIsLoading] = useState(true);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
@@ -85,22 +88,25 @@ const App = () => {
   return (
     <Router>
       <div className="h-screen w-screen flex bg-bg">
-        <div className="bg-bg border-r border-accent shadow-sm w-20 flex flex-col items-center py-4 h-full justify-between">
-          <div className="flex flex-col space-y-6">
-            <NavButton to="/chat" label="Chat" />
-            <NavButton to="/friends" label="Friends" />
-          </div>
+        {!isMobileView && (
+          <div className="bg-bg border-r border-accent shadow-sm w-20 flex flex-col items-center py-4 h-full justify-between">
+            <div className="flex flex-col gap-4">
+              <NavButton to="/chat" label="Chat" />
+              <NavButton to="/friends" label="Friends" />
+              <ThemeToggle />
+            </div>
 
-          {user && (
-            <button onClick={() => setIsSettingsOpen(true)} className="mb-4">
-              <img
-                src={user.avatar || "/default-avatar.png"}
-                alt="User Avatar"
-                className="w-12 h-12 rounded-full border-2 border-accent hover:opacity-80 transition"
-              />
-            </button>
-          )}
-        </div>
+            {user && (
+              <button onClick={() => setIsSettingsOpen(true)}>
+                <img
+                  src={user.avatar || "/default-avatar.png"}
+                  alt="User Avatar"
+                  className="w-12 h-12 rounded-full border-2 border-accent hover:opacity-80 transition"
+                />
+              </button>
+            )}
+          </div>
+        )}
 
         <div className="flex-1 overflow-hidden relative">
           <RoutesHandler />
@@ -108,6 +114,26 @@ const App = () => {
 
         {isSettingsOpen && (
           <Settings onClose={() => setIsSettingsOpen(false)} />
+        )}
+
+        {!currentConversation && isMobileView && (
+          <div className="bg-bg border-t border-accent shadow-sm h-20 flex items-center py-4 w-full justify-between fixed bottom-0 left-0 z-40 px-4">
+            <div className="flex gap-4">
+              <NavButton to="/chat" label="Chat" />
+              <NavButton to="/friends" label="Friends" />
+              <ThemeToggle />
+            </div>
+
+            {user && (
+              <button onClick={() => setIsSettingsOpen(true)}>
+                <img
+                  src={user.avatar || "/default-avatar.png"}
+                  alt="User Avatar"
+                  className="w-12 h-12 rounded-full border-2 border-accent hover:opacity-80 transition"
+                />
+              </button>
+            )}
+          </div>
         )}
 
         <Toaster position="bottom-right" />

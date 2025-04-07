@@ -1,7 +1,7 @@
 import { useState, useRef } from "react";
 import { useChatStore } from "../../store/chatStore";
 
-const ChatInput: React.FC = () => {
+const ChatInput = () => {
   const [message, setMessage] = useState("");
   const inputRef = useRef<HTMLTextAreaElement>(null);
 

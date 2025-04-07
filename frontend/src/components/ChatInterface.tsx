@@ -82,18 +82,6 @@ const ChatInterface = () => {
 
         {(!isMobileView || currentConversation) && (
           <div className="flex-1 h-full flex flex-col">
-            {isMobileView && currentConversation && (
-              <div className="p-2 border-b border-accent flex-shrink-0 bg-bg">
-                <button
-                  className="flex items-center text-secondary-text hover:text-text"
-                  onClick={handleBack}
-                >
-                  <ArrowLeftIcon className="h-5 w-5 mr-1" />
-                  <span>Back</span>
-                </button>
-              </div>
-            )}
-
             <div className="flex-1 flex flex-col overflow-hidden">
               <ChatWindow />
             </div>

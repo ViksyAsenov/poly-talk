@@ -5,6 +5,9 @@ import { formatDistanceToNow } from "date-fns";
 import { useUserStore } from "../../store/userStore";
 import { useSocket } from "../../hooks/useSocket";
 import { socket } from "../../api/socket";
+import { useAppStore } from "../../store/appStore";
+import { ArrowLeftIcon } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 interface MessageBubbleProps {
   message: Message;
@@ -148,8 +151,15 @@ const GroupInfoModal = ({ onClose }: { onClose: () => void }) => {
 };
 
 const ChatWindow: React.FC = () => {
-  const { messages, currentConversation, fetchMessages, addMessage } =
-    useChatStore();
+  const navigate = useNavigate();
+  const { isMobileView } = useAppStore();
+  const {
+    messages,
+    currentConversation,
+    fetchMessages,
+    addMessage,
+    setCurrentConversation,
+  } = useChatStore();
   const { user } = useUserStore();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [showGroupInfo, setShowGroupInfo] = useState(false);
@@ -191,6 +201,11 @@ const ChatWindow: React.FC = () => {
     dependencies: [currentConversation],
   });
 
+  const handleBack = () => {
+    navigate("/chat", { replace: true });
+    setCurrentConversation(null);
+  };
+
   if (!currentConversation) {
     return <EmptyConversation />;
   }
@@ -202,9 +217,17 @@ const ChatWindow: React.FC = () => {
   return (
     <div className="flex flex-col h-full relative">
       <div className="p-4 border-b border-accent flex-shrink-0 bg-bg flex justify-between items-center">
-        <h2 className="text-xl font-semibold truncate text-text">
+        <div className="flex text-xl font-semibold truncate text-text">
+          {isMobileView && currentConversation && (
+            <button
+              className="flex items-center text-accent hover:text-accent-hover mr-2"
+              onClick={handleBack}
+            >
+              <ArrowLeftIcon className="h-5 w-5" />
+            </button>
+          )}
           {conversationTitle}
-        </h2>
+        </div>
         {currentConversation.isGroup && (
           <button
             onClick={() => setShowGroupInfo(true)}
