@@ -203,7 +203,7 @@ const Friends = () => {
                 Friend Requests
               </h2>
               {requestsCount > 0 && (
-                <span className="bg-accent bg-opacity-10 text-accent text-xs px-2 py-0.5 rounded-full">
+                <span className="bg-accent bg-opacity-10 text-white text-xs px-2 py-0.5 rounded-full">
                   {requestsCount}
                 </span>
               )}
