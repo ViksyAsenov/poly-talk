@@ -43,6 +43,7 @@ const setupServerListeners = (io: Server) => {
         }
 
         if (type === "LEAVE") {
+          logger.info(`User ${user.id} left chat ${id}`);
           await socket.leave(`chat:${id}`);
         }
       }

@@ -9,8 +9,6 @@ const Users = pgTable("users", {
   avatar: varchar("avatar", { length: 255 }).notNull(),
   displayName: varchar("display_name", { length: 20 }).notNull(),
   tag: varchar("tag", { length: 255 }).notNull().unique(),
-  firstName: varchar("first_name", { length: 255 }).notNull(),
-  lastName: varchar("last_name", { length: 255 }).notNull(),
   email: varchar("email", { length: 255 }).notNull().unique(),
   customizedFields: varchar("customized_fields", { length: 255 }).array().notNull(),
   languageId: uuid("language_id").references(() => Languages.id),

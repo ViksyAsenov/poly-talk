@@ -45,8 +45,6 @@ const getMinUserById = async (userId: string): Promise<IMinUser> => {
     displayName: user.displayName,
     email: user.email,
     tag: user.tag,
-    firstName: user.firstName,
-    lastName: user.lastName,
     languageId: user.languageId,
     languageName: language?.name,
   };
@@ -54,7 +52,7 @@ const getMinUserById = async (userId: string): Promise<IMinUser> => {
 
 const getOrCreateUserWithGoogle = async (profile: GoogleUser) => {
   const foundUser = (await db.select().from(Users).where(eq(Users.googleId, profile.id)))[0];
-
+  profile.name = profile.name.replace(/[^a-zA-Z0-9 ]/g, "");
   if (!foundUser) {
     const tag = await generateUserTag(profile.name);
 
@@ -66,9 +64,7 @@ const getOrCreateUserWithGoogle = async (profile: GoogleUser) => {
           googleId: profile.id,
           avatar: profile.picture,
           email: profile.email,
-          displayName: profile.name,
-          firstName: profile.given_name,
-          lastName: profile.family_name,
+          displayName: profile.name.slice(0, 20),
           customizedFields: [],
         })
         .returning()
@@ -94,16 +90,9 @@ const getOrCreateUserWithGoogle = async (profile: GoogleUser) => {
     updateObject.avatar = profile.picture;
   }
 
-  if (!foundUser) {
-    updateObject.displayName = profile.name.split(" ").join("").toLowerCase();
-  }
-
-  if (!customizedFields.includes("firstName")) {
-    updateObject.firstName = profile.given_name;
-  }
-
-  if (!customizedFields.includes("lastName")) {
-    updateObject.lastName = profile.family_name;
+  if (!customizedFields.includes("displayName")) {
+    updateObject.displayName = profile.name;
+    updateObject.tag = await generateUserTag(profile.name);
   }
 
   await db.update(Users).set(updateObject).where(eq(Users.id, foundUser.id));
@@ -133,14 +122,6 @@ const updateUserProfile = async (userId: string, profileData: Partial<NewUser>) 
   if (profileData.displayName) {
     fieldsToUpdate.displayName = profileData.displayName;
     fieldsToUpdate.tag = await generateUserTag(profileData.displayName);
-  }
-
-  if (profileData.firstName) {
-    fieldsToUpdate.firstName = profileData.firstName;
-  }
-
-  if (profileData.lastName) {
-    fieldsToUpdate.lastName = profileData.lastName;
   }
 
   Object.keys(fieldsToUpdate).forEach((field) => {

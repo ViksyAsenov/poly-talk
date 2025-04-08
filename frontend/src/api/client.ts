@@ -5,21 +5,14 @@ import { client } from "./config";
 
 const authApi = {
   getGoogleLoginUrl: () => client.get<APIResponse<string>>("/auth/google"),
-  logout: () => client.post("/auth/logout"),
+  logout: () => client.post<APIResponse<null>>("/auth/logout"),
 };
 
 const userApi = {
   getMe: () => client.get<APIResponse<IMinUser>>("/user/me"),
-  updateMe: (
-    displayName?: string,
-    firstName?: string,
-    lastName?: string,
-    languageId?: string
-  ) =>
+  updateMe: (displayName?: string, languageId?: string) =>
     client.patch<APIResponse<IMinUser>>("/user/me", {
       displayName,
-      firstName,
-      lastName,
       languageId,
     }),
   sendFriendRequest: (tag: string) => client.post("/user/friends", { tag }),
@@ -47,19 +40,45 @@ const chatApi = {
     client.post("/chat/conversation/direct", { id: userId }),
   createGroupConversation: (name: string, participantIds: string[]) =>
     client.post("/chat/conversation/group", { name, participantIds }),
-  updateGroupConversationName: (id: string, name: string) =>
-    client.put("/chat/conversation/group/name", { id, name }),
-  addParticipantToGroupConversation: (id: string, participantId: string) =>
-    client.post("/chat/conversation/group/participant", { id, participantId }),
-  makeParticipantAdmin: (id: string, participantId: string) =>
-    client.put("/chat/conversation/group/participant", { id, participantId }),
-  removeParticipantFromGroupConversation: (id: string, participantId: string) =>
-    client.post("/chat/conversation/group/participant/kick", {
-      id,
-      participantId,
+  updateGroupConversationName: (conversationId: string, name: string) =>
+    client.put<APIResponse<Conversation>>("/chat/conversation/group/name", {
+      conversationId,
+      name,
     }),
-  leaveGroupConversation: (id: string) =>
-    client.post("/chat/conversation/group/participant/leave", { id }),
+  addParticipantToGroupConversation: (
+    conversationId: string,
+    participantId: string
+  ) =>
+    client.post<APIResponse<Conversation>>(
+      "/chat/conversation/group/participant",
+      {
+        conversationId,
+        participantId,
+      }
+    ),
+  makeParticipantAdmin: (conversationId: string, participantId: string) =>
+    client.put<APIResponse<Conversation>>(
+      "/chat/conversation/group/participant",
+      {
+        conversationId,
+        participantId,
+      }
+    ),
+  removeParticipantFromGroupConversation: (
+    conversationId: string,
+    participantId: string
+  ) =>
+    client.post<APIResponse<Conversation>>(
+      "/chat/conversation/group/participant/kick",
+      {
+        conversationId,
+        participantId,
+      }
+    ),
+  leaveGroupConversation: (conversationId: string) =>
+    client.post("/chat/conversation/group/participant/leave", {
+      conversationId,
+    }),
   sendMessage: (data: SendMessageRequest) =>
     client.post<APIResponse<Message>>("/chat/message", data),
   deleteMessage: (messageId: string) =>

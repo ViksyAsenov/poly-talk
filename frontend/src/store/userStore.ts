@@ -10,12 +10,7 @@ interface UserState {
   pendingFriendRequests: IFriendRequests;
   languages: Language[];
 
-  updateUser: (
-    displayName?: string,
-    firstName?: string,
-    lastName?: string,
-    languageId?: string
-  ) => Promise<void>;
+  updateUser: (displayName?: string, languageId?: string) => Promise<void>;
 
   fetchFriends: () => Promise<void>;
   fetchPendingFriendRequests: () => Promise<void>;
@@ -29,6 +24,7 @@ interface UserState {
 
   checkAuth: () => Promise<void>;
   loginWithGoogle: () => Promise<void>;
+  logout: () => Promise<void>;
 }
 
 const useUserStore = create<UserState>((set, get) => ({
@@ -38,13 +34,8 @@ const useUserStore = create<UserState>((set, get) => ({
   pendingFriendRequests: { sent: [], received: [] },
   languages: [],
 
-  updateUser: async (displayName, firstName, lastName, languageId) => {
-    const response = await userApi.updateMe(
-      displayName,
-      firstName,
-      lastName,
-      languageId
-    );
+  updateUser: async (displayName, languageId) => {
+    const response = await userApi.updateMe(displayName, languageId);
 
     const { success, data } = response.data;
 
@@ -138,6 +129,15 @@ const useUserStore = create<UserState>((set, get) => ({
 
     if (success) {
       window.location.href = data;
+    }
+  },
+  logout: async () => {
+    const response = await authApi.logout();
+    const { success } = response.data;
+
+    if (success) {
+      toast.success("Successfully logged out!");
+      window.location.reload();
     }
   },
 }));

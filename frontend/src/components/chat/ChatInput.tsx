@@ -1,51 +1,78 @@
-import { useState, KeyboardEvent } from "react";
+import { useState, useRef } from "react";
 import { useChatStore } from "../../store/chatStore";
-import { PaperAirplaneIcon } from "@heroicons/react/24/solid";
 
 const ChatInput = () => {
   const [message, setMessage] = useState("");
+  const inputRef = useRef<HTMLTextAreaElement>(null);
+
   const { currentConversation, sendMessage } = useChatStore();
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleSend = async () => {
-    if (!message.trim() || !currentConversation || isLoading) return;
-
-    setIsLoading(true);
-
-    await sendMessage(currentConversation.id, message.trim());
-
-    setMessage("");
-    setIsLoading(false);
+  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setMessage(e.target.value);
+    adjustTextareaHeight();
   };
 
-  const handleKeyPress = (e: KeyboardEvent<HTMLTextAreaElement>) => {
+  const adjustTextareaHeight = () => {
+    if (inputRef.current) {
+      inputRef.current.style.height = "auto";
+      inputRef.current.style.height = `${Math.min(
+        inputRef.current.scrollHeight,
+        150
+      )}px`;
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSend();
     }
   };
 
+  const handleSend = async () => {
+    if (!message.trim() || !currentConversation || isLoading) return;
+
+    setIsLoading(true);
+    try {
+      await sendMessage(currentConversation.id, message.trim());
+      setMessage("");
+    } catch (error) {
+      console.error("Error sending message:", error);
+    } finally {
+      setIsLoading(false);
+      if (inputRef.current) {
+        inputRef.current.style.height = "auto";
+      }
+    }
+  };
+
   if (!currentConversation) return null;
 
   return (
-    <div className="border-t p-4">
-      <div className="flex items-end space-x-2">
-        <textarea
-          className="input resize-none"
-          rows={1}
-          value={message}
-          onChange={(e) => setMessage(e.target.value)}
-          onKeyDown={handleKeyPress}
-          placeholder="Type a message..."
-          disabled={isLoading}
-        />
-        <button
-          className="btn btn-primary p-2"
-          onClick={handleSend}
-          disabled={!message.trim() || isLoading}
-        >
-          <PaperAirplaneIcon className="h-5 w-5" />
-        </button>
+    <div className="bg-bg">
+      <div className="relative">
+        <div className="flex items-center border-t border-accent bg-secondary-bg p-2">
+          <textarea
+            ref={inputRef}
+            value={message}
+            onChange={handleInputChange}
+            onKeyDown={handleKeyDown}
+            placeholder="Type a message..."
+            className="flex-1 mx-2 outline-none resize-none max-h-36 bg-transparent text-text"
+            rows={1}
+            disabled={isLoading}
+          />
+
+          <button
+            onClick={handleSend}
+            disabled={!message.trim() || isLoading}
+            className="ml-1 p-2 rounded-full bg-accent text-white hover:bg-accent-hover"
+            aria-label="Send message"
+          >
+            Send
+          </button>
+        </div>
       </div>
     </div>
   );

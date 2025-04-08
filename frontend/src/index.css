@@ -2,33 +2,32 @@
 @tailwind components;
 @tailwind utilities;
 
-@layer base {
-  body {
-    @apply bg-gray-50 text-gray-900;
-    margin: 0;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto",
-      "Oxygen", "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans",
-      "Helvetica Neue", sans-serif;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-  }
+:root {
+  --bg: #f8f9f8;
+  --secondary-bg: #e8eeea;
+  --text: #2c3a2f;
+  --secondary-text: #5f6e64;
+  --accent: #4b7963;
+  --accent-hover: #3a6152;
+  --gray: #616e67;
+  --gray-hover: #4c5951;
+  --red: #d35f5f;
+  --red-hover: #ba4a4a;
 }
 
-@layer components {
-  .btn {
-    @apply px-4 py-2 rounded-md font-medium transition-colors duration-200;
-  }
-
-  .btn-primary {
-    @apply bg-primary-600 text-white hover:bg-primary-700;
-  }
-
-  .input {
-    @apply w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent;
-  }
+.dark {
+  --bg: #1a201d;
+  --secondary-bg: #2a332e;
+  --text: #e8efe9;
+  --secondary-text: #a6b5ac;
+  --accent: #5c9a7d;
+  --accent-hover: #6bac8e;
+  --gray: #94a099;
+  --gray-hover: #b3bfb8;
+  --red: #d35f5f;
+  --red-hover: #e67373;
 }
 
-code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, "Courier New",
-    monospace;
+* {
+  transition: background-color 0.2s ease;
 }
