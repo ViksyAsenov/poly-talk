@@ -1,8 +1,8 @@
+import { useNavigate } from "react-router-dom";
+import { formatDistanceToNow } from "date-fns";
 import { useChatStore } from "../../store/chatStore";
 import { Conversation } from "../../types/chat";
-import { formatDistanceToNow } from "date-fns";
 import { useUserStore } from "../../store/userStore";
-import { useNavigate } from "react-router-dom";
 
 interface ConversationItemProps {
   conversation: Conversation;
@@ -31,11 +31,11 @@ const ConversationItem = ({
     <div
       onClick={() => onSelect(conversation)}
       className={`flex items-center px-4 py-3 cursor-pointer 
-        hover:bg-secondary-bg transition-colors 
+        hover:bg-secondary-bg transition-colors
         ${isSelected ? "bg-secondary-bg" : "bg-bg"}`}
     >
       {conversation.isGroup ? (
-        <div className="w-12 h-12 rounded-full bg-accent bg-opacity-20 flex items-center justify-center flex-shrink-0 text-accent font-medium">
+        <div className="w-12 h-12 rounded-full bg-accent bg-opacity-20 flex items-center justify-center flex-shrink-0 text-white font-medium">
           {profilePicture || "G"}
         </div>
       ) : (
@@ -46,7 +46,7 @@ const ConversationItem = ({
         />
       )}
 
-      <div className="ml-3 flex-1 flex flex-col">
+      <div className="ml-3 flex-1 flex flex-col min-w-0">
         <div className="flex justify-between items-center">
           <h3 className="font-medium text-text truncate">{displayName}</h3>
           {conversation.lastActivity && (
@@ -67,15 +67,6 @@ const ConversationItem = ({
   );
 };
 
-const EmptyConversations = () => (
-  <div className="flex flex-col items-center justify-center h-full p-4">
-    <p className="text-secondary-text text-center">No conversations yet</p>
-    <p className="text-secondary-text text-sm text-center mt-2">
-      Add friends to start chatting
-    </p>
-  </div>
-);
-
 const ConversationList = () => {
   const navigate = useNavigate();
   const { conversations, currentConversation, setCurrentConversation } =
@@ -94,7 +85,14 @@ const ConversationList = () => {
 
       <div className="flex-1 overflow-y-auto bg-bg">
         {conversations.length === 0 ? (
-          <EmptyConversations />
+          <div className="flex flex-col items-center justify-center h-full p-4">
+            <p className="text-secondary-text text-center">
+              No conversations yet
+            </p>
+            <p className="text-secondary-text text-sm text-center mt-2">
+              Add friends to start chatting
+            </p>
+          </div>
         ) : (
           conversations.map((conversation) => (
             <ConversationItem

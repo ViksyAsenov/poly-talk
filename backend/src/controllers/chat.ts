@@ -90,7 +90,7 @@ const makeGroupConversationParticipantAdmin = asyncErrorHandler(async (req: Requ
   const { conversationId, participantId } = req.body as TUpdateGroupConversationParticipantBody;
   const conversation = await makeGroupConversationParticipantAdminService(req.user.id, conversationId, participantId);
 
-  res.json({ success: true, conversation });
+  res.json({ success: true, data: conversation });
 });
 
 const deleteMessage = asyncErrorHandler(async (req: Request, res: Response) => {

@@ -1,12 +1,11 @@
-import ChatWindow from "./chat/ChatWindow";
-import ChatInput from "./chat/ChatInput";
-import ConversationList from "./chat/ConversationList";
-import { useChatStore } from "../store/chatStore";
 import { useEffect, useState } from "react";
-import { ArrowLeftIcon } from "@heroicons/react/24/solid";
 import { useParams, useNavigate } from "react-router-dom";
-import { useAppStore } from "../store/appStore";
-import { useUserStore } from "../store/userStore";
+import ChatWindow from "./ChatWindow";
+import ChatInput from "./ChatInput";
+import ConversationList from "./ConversationList";
+import { useChatStore } from "../../store/chatStore";
+import { useAppStore } from "../../store/appStore";
+import { useUserStore } from "../../store/userStore";
 
 const ChatInterface = () => {
   const { conversationId } = useParams();
@@ -61,11 +60,6 @@ const ChatInterface = () => {
       navigate(`/chat/${currentConversation.id}`, { replace: true });
     }
   }, [currentConversation, isMobileView, navigate, isInitialLoad]);
-
-  const handleBack = () => {
-    navigate("/chat", { replace: true });
-    setCurrentConversation(null);
-  };
 
   return (
     <div className="h-screen w-full bg-secondary-bg overflow-hidden">

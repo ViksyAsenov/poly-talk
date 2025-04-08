@@ -17,13 +17,7 @@ const server = http.createServer(app);
 
 app.set("trust proxy", 1);
 
-app.use(
-  bodyParser.json({
-    verify: (req: Request, res, buf) => {
-      req.rawBody = buf;
-    },
-  }),
-);
+app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
 app.use(

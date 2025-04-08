@@ -1,13 +1,13 @@
-import React, { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { formatDistanceToNow } from "date-fns";
+import { ArrowLeftIcon } from "lucide-react";
 import { useChatStore } from "../../store/chatStore";
 import { Message } from "../../types/chat";
-import { formatDistanceToNow } from "date-fns";
 import { useUserStore } from "../../store/userStore";
 import { useSocket } from "../../hooks/useSocket";
 import { socket } from "../../api/socket";
 import { useAppStore } from "../../store/appStore";
-import { ArrowLeftIcon } from "lucide-react";
-import { useNavigate } from "react-router-dom";
 
 interface MessageBubbleProps {
   message: Message;
@@ -24,7 +24,7 @@ const MessageBubble = ({ message, isOwn }: MessageBubbleProps) => {
         <div className="text-sm font-medium mb-1">
           {message.sender.displayName}
         </div>
-        <div className="text-sm break-words">{message.displayContent}</div>
+        <div className="text-sm break-all">{message.displayContent}</div>
         <div
           className={`text-xs mt-1 ${
             isOwn ? "text-white text-opacity-80" : "text-secondary-text"
@@ -39,35 +39,22 @@ const MessageBubble = ({ message, isOwn }: MessageBubbleProps) => {
   );
 };
 
-const EmptyConversation = () => (
-  <div className="flex items-center justify-center h-full p-4">
-    <div className="text-center">
-      <p className="text-secondary-text mb-2">No conversation selected</p>
-      <p className="text-secondary-text text-sm">
-        Select a conversation from the list to start chatting
-      </p>
-    </div>
-  </div>
-);
-
-const NoMessages = () => (
-  <div className="h-full flex items-center justify-center">
-    <p className="text-secondary-text text-center">
-      No messages yet. Start the conversation!
-    </p>
-  </div>
-);
-
 const GroupInfoModal = ({ onClose }: { onClose: () => void }) => {
-  const { user } = useUserStore();
+  const { user, friends, fetchFriends } = useUserStore();
   const {
     currentConversation,
     changeGroupConversationName,
     addParticipant,
     removeParticipant,
+    makeParticipantAdmin,
   } = useChatStore();
 
+  useEffect(() => {
+    fetchFriends();
+  }, [fetchFriends]);
+
   const [newName, setNewName] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     setNewName(currentConversation?.name ?? "");
@@ -77,72 +64,144 @@ const GroupInfoModal = ({ onClose }: { onClose: () => void }) => {
     (p) => p.user.id === user?.id
   )?.isAdmin;
 
+  const participantIds =
+    currentConversation?.participants.map((p) => p.user.id) ?? [];
+  const nonParticipantFriends = friends.filter(
+    (f) => !participantIds.includes(f.id)
+  );
+
+  const filteredFriends = nonParticipantFriends.filter((f) =>
+    f.displayName.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
-      <div className="bg-bg rounded-lg p-6 w-full max-w-md">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-bold">Group Info</h2>
-          <button onClick={onClose} className="text-2xl">
-            &times;
-          </button>
-        </div>
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+      <div className="bg-secondary-bg rounded-lg shadow-lg p-6 w-full max-w-lg relative mx-4">
+        <button
+          onClick={onClose}
+          className="absolute top-3 right-3 text-gray hover:text-gray-hover text-lg"
+        >
+          ✕
+        </button>
+
+        <h1 className="text-2xl font-bold mb-6 text-text">Group Info</h1>
+
         {isAdmin && (
-          <div className="mb-4">
-            <label className="block text-sm font-medium mb-1">
-              Group Name:
+          <div className="mb-6">
+            <label className="block text-secondary-text mb-1 font-medium">
+              Group Name
             </label>
             <input
               type="text"
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
-              className="w-full p-2 border rounded"
+              className="w-full px-3 py-2 border border-secondary-bg rounded-lg bg-bg text-text focus:outline-none focus:ring-2 focus:ring-accent"
+              placeholder="Group Name"
             />
             <button
               onClick={() => {
                 changeGroupConversationName(currentConversation.id, newName);
               }}
-              className="mt-2 px-4 py-2 bg-accent text-white rounded"
+              className="w-full mt-2 bg-accent text-white py-2 rounded-lg font-medium hover:bg-accent-hover focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2"
             >
               Change Name
             </button>
           </div>
         )}
-        <div>
-          <h3 className="font-semibold mb-2">Participants</h3>
-          <ul>
-            {currentConversation?.participants.map((participant) => (
-              <li
-                key={participant.user.id}
-                className="flex justify-between items-center py-1 border-b border-gray"
-              >
-                <span>{participant.user.displayName}</span>
-                {isAdmin && participant.user.id !== user?.id && (
-                  <button
-                    onClick={() =>
-                      removeParticipant(
-                        currentConversation.id,
-                        participant.user.id
-                      )
-                    }
-                    className="text-red text-sm"
-                  >
-                    Kick
-                  </button>
-                )}
-              </li>
-            ))}
+
+        <div className="mb-6">
+          <h2 className="text-lg font-semibold mb-2 text-text">Participants</h2>
+          <ul className="space-y-2 max-h-48 overflow-y-auto pr-1">
+            {currentConversation?.participants.map((participant) => {
+              const isMe = participant.user.id === user?.id;
+              const isParticipantAdmin = participant.isAdmin;
+
+              return (
+                <li
+                  key={participant.user.id}
+                  className="flex justify-between items-center px-3 py-2 bg-bg rounded-lg text-sm"
+                >
+                  <div className="text-text">
+                    <span className="font-medium">
+                      {participant.user.displayName}
+                    </span>
+                    {isParticipantAdmin && (
+                      <span className="ml-2 text-xs text-accent font-semibold">
+                        (Admin)
+                      </span>
+                    )}
+                  </div>
+
+                  {isAdmin && !isMe && (
+                    <div className="flex gap-2">
+                      {!isParticipantAdmin && (
+                        <button
+                          onClick={() =>
+                            makeParticipantAdmin(
+                              currentConversation.id,
+                              participant.user.id
+                            )
+                          }
+                          className="text-accent hover:text-accent-hover text-sm"
+                        >
+                          Promote
+                        </button>
+                      )}
+                      <button
+                        onClick={() =>
+                          removeParticipant(
+                            currentConversation.id,
+                            participant.user.id
+                          )
+                        }
+                        className="text-red hover:text-red-hover text-sm"
+                      >
+                        Kick
+                      </button>
+                    </div>
+                  )}
+                </li>
+              );
+            })}
           </ul>
         </div>
+
         {isAdmin && (
-          <div className="mt-4">
-            <button
-              onClick={() => {
-                addParticipant(currentConversation.id, "asd");
-              }}
-              className="px-4 py-2 bg-accent text-white rounded w-full"
-            >
-              Add User
-            </button>
+          <div className="mb-6">
+            <h2 className="text-lg font-semibold mb-2 text-text">
+              Add Friends
+            </h2>
+
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full mb-3 px-3 py-2 border border-secondary-bg rounded-lg bg-bg text-text focus:outline-none focus:ring-2 focus:ring-accent"
+              placeholder="Search friends..."
+            />
+
+            {filteredFriends.length === 0 ? (
+              <p className="text-secondary-text text-sm">No friends found.</p>
+            ) : (
+              <ul className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                {filteredFriends.map((friend) => (
+                  <li
+                    key={friend.id}
+                    className="flex justify-between items-center px-3 py-2 bg-bg rounded-lg text-sm"
+                  >
+                    <span className="text-text">{friend.displayName}</span>
+                    <button
+                      onClick={() =>
+                        addParticipant(currentConversation.id, friend.id)
+                      }
+                      className="text-accent hover:text-accent-hover text-sm"
+                    >
+                      Add
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
         )}
       </div>
@@ -150,7 +209,7 @@ const GroupInfoModal = ({ onClose }: { onClose: () => void }) => {
   );
 };
 
-const ChatWindow: React.FC = () => {
+const ChatWindow = () => {
   const navigate = useNavigate();
   const { isMobileView } = useAppStore();
   const {
@@ -207,7 +266,16 @@ const ChatWindow: React.FC = () => {
   };
 
   if (!currentConversation) {
-    return <EmptyConversation />;
+    return (
+      <div className="flex items-center justify-center h-full p-4">
+        <div className="text-center">
+          <p className="text-secondary-text mb-2">No conversation selected</p>
+          <p className="text-secondary-text text-sm">
+            Select a conversation from the list to start chatting
+          </p>
+        </div>
+      </div>
+    );
   }
   const conversationTitle = currentConversation.isGroup
     ? currentConversation.name
@@ -240,7 +308,11 @@ const ChatWindow: React.FC = () => {
 
       <div className="flex-1 overflow-y-auto p-4 pb-6 bg-secondary-bg">
         {messages.length === 0 ? (
-          <NoMessages />
+          <div className="h-full flex items-center justify-center">
+            <p className="text-secondary-text text-center">
+              No messages yet. Start the conversation!
+            </p>
+          </div>
         ) : (
           <div>
             {messages.map((message) => (

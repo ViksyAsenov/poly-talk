@@ -9,11 +9,11 @@ import {
 import { Toaster } from "react-hot-toast";
 import { useUserStore } from "./store/userStore";
 import { useEffect, useState } from "react";
-import Login from "./components/Login";
-import ChatInterface from "./components/ChatInterface";
-import Friends from "./components/Friends";
+import Landing from "./components/Landing";
+import ChatInterface from "./components/chat/ChatInterface";
+import Friends from "./components/friends/Friends";
 import { useAppStore } from "./store/appStore";
-import Settings from "./components/Settings";
+import Profile from "./components/Profile";
 import ThemeToggle from "./components/ThemeToggle";
 import { useChatStore } from "./store/chatStore";
 
@@ -26,7 +26,7 @@ const RoutesHandler = () => {
       <Route path="/chat" element={<ChatInterface />} />
       <Route path="/chat/:conversationId" element={<ChatInterface />} />
       <Route path="/friends" element={<Friends />} />
-      <Route path="*" element={<Navigate to="/" replace />} />{" "}
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 };
@@ -52,7 +52,7 @@ const App = () => {
   const { user, isAuthenticated, checkAuth, fetchLanguages } = useUserStore();
   const { currentConversation } = useChatStore();
   const [isLoading, setIsLoading] = useState(true);
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
 
   useEffect(() => {
     const checkMobile = () => {
@@ -82,7 +82,7 @@ const App = () => {
   }
 
   if (!isAuthenticated) {
-    return <Login />;
+    return <Landing />;
   }
 
   return (
@@ -97,7 +97,7 @@ const App = () => {
             </div>
 
             {user && (
-              <button onClick={() => setIsSettingsOpen(true)}>
+              <button onClick={() => setIsProfileOpen(true)}>
                 <img
                   src={user.avatar || "/default-avatar.png"}
                   alt="User Avatar"
@@ -112,9 +112,7 @@ const App = () => {
           <RoutesHandler />
         </div>
 
-        {isSettingsOpen && (
-          <Settings onClose={() => setIsSettingsOpen(false)} />
-        )}
+        {isProfileOpen && <Profile onClose={() => setIsProfileOpen(false)} />}
 
         {!currentConversation && isMobileView && (
           <div className="bg-bg border-t border-accent shadow-sm h-20 flex items-center py-4 w-full justify-between fixed bottom-0 left-0 z-40 px-4">
@@ -125,7 +123,7 @@ const App = () => {
             </div>
 
             {user && (
-              <button onClick={() => setIsSettingsOpen(true)}>
+              <button onClick={() => setIsProfileOpen(true)}>
                 <img
                   src={user.avatar || "/default-avatar.png"}
                   alt="User Avatar"

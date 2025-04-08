@@ -2,11 +2,7 @@ import { useState, useEffect } from "react";
 import { useUserStore } from "../store/userStore";
 import { Language } from "../types/user";
 
-interface SettingsProps {
-  onClose: () => void;
-}
-
-const Settings = ({ onClose }: SettingsProps) => {
+const Profile = ({ onClose }: { onClose: () => void }) => {
   const { user, updateUser, languages, fetchLanguages, logout } =
     useUserStore();
   const [displayName, setDisplayName] = useState("");
@@ -97,4 +93,4 @@ const Settings = ({ onClose }: SettingsProps) => {
   );
 };
 
-export default Settings;
+export default Profile;

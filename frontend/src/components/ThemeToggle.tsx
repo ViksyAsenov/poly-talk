@@ -11,7 +11,7 @@ const ThemeToggle = () => {
 
       return window.matchMedia("(prefers-color-scheme: dark)").matches;
     }
-    return false;
+    return true;
   });
 
   useEffect(() => {
@@ -26,8 +26,7 @@ const ThemeToggle = () => {
       onClick={() => setIsDark(!isDark)}
       className="px-2 py-1 rounded transition-colors duration-200 items-center text-center text-accent"
     >
-      {/* {isDark ? "normal" : "𝓯𝓻𝓮𝓪𝓴𝔂"} */}
-      {isDark ? "☀️" : "🌙"}
+      {isDark ? "🌙" : "☀️"}
     </button>
   );
 };

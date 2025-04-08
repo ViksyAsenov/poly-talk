@@ -141,7 +141,7 @@ const createGroupConversation = async (userId: string, name: string, participant
     throw new AppError(ChatErrors.CANNOT_MESSAGE_SELF);
   }
 
-  if (participantIds.length < 3) {
+  if (participantIds.length < 2) {
     throw new AppError(ChatErrors.INVALID_GROUP_DATA);
   }
 
@@ -325,7 +325,7 @@ const sendMessage = async (userId: string, conversationId: string, content: stri
       createdAt: message.createdAt,
     };
 
-    if (participantData.languageId) {
+    if (participantData.languageId && message.senderId !== participantData.id) {
       const translation = await getMessageTranslation(participantData.id, message, participantData.languageId);
 
       messageData.displayContent = translation.content;
@@ -417,7 +417,7 @@ const getConversationMessages = async (userId: string, conversationId: string): 
     messages.map(async (message) => {
       const sender = await getMinUserById(message.senderId);
 
-      if (!user.languageId) {
+      if (!user.languageId || message.senderId === user.id) {
         return {
           id: message.id,
           sender,

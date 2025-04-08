@@ -1,149 +1,10 @@
 import { useState, useEffect } from "react";
-import { useUserStore } from "../store/userStore";
-import {
-  FriendRequestReceived,
-  FriendRequestSent,
-  IMinUser,
-} from "../types/user";
-import { chatApi } from "../api/client";
 import { useNavigate } from "react-router-dom";
-import { useAppStore } from "../store/appStore";
-
-const FriendItem = ({
-  friend,
-  onSelect,
-  isSelected,
-}: {
-  friend: IMinUser;
-  onSelect: (id: string) => void;
-  isSelected: boolean;
-}) => {
-  const { removeFriend } = useUserStore();
-  const navigate = useNavigate();
-
-  const messageFriend = async (id: string) => {
-    const response = await chatApi.createDirectConversation(id);
-    const { success, data } = response.data;
-    if (success) {
-      navigate(`/chat/${data.id}`);
-    }
-  };
-
-  return (
-    <div className="flex items-center justify-between p-4 border border-accent rounded-md bg-secondary-bg mb-2">
-      <div className="flex items-center">
-        <div className="w-10 h-10 rounded-full bg-secondary-bg flex items-center justify-center text-text overflow-hidden">
-          {friend.avatar ? (
-            <img
-              src={friend.avatar}
-              alt={friend.displayName}
-              className="w-full h-full object-cover"
-            />
-          ) : (
-            friend.displayName?.charAt(0).toUpperCase()
-          )}
-        </div>
-        <div className="ml-3">
-          <h3 className="font-medium text-text">{friend.displayName}</h3>
-          <p className="text-sm text-secondary-text">{friend.tag}</p>
-        </div>
-      </div>
-      <div className="flex gap-2 items-center">
-        <button
-          onClick={() => messageFriend(friend.id)}
-          className="text-white bg-accent px-3 py-1 rounded-md text-sm hover:bg-accent-hover"
-        >
-          Message
-        </button>
-        <button
-          onClick={() => removeFriend(friend.id)}
-          className="text-white bg-red px-3 py-1 rounded-md text-sm hover:bg-red-hover"
-        >
-          Remove
-        </button>
-        <input
-          type="checkbox"
-          checked={isSelected}
-          onChange={() => onSelect(friend.id)}
-        />
-      </div>
-    </div>
-  );
-};
-
-type RequestItemProps =
-  | { request: FriendRequestReceived; type: "received" }
-  | { request: FriendRequestSent; type: "sent" };
-
-const RequestItem = ({ request, type }: RequestItemProps) => {
-  const { acceptFriendRequest, rejectFriendRequest } = useUserStore();
-
-  const user = type === "received" ? request.sender : request.receiver;
-
-  return (
-    <div className="flex items-center justify-between p-4 border rounded-md bg-secondary-bg mb-2">
-      <div className="flex items-center">
-        <div className="w-10 h-10 rounded-full bg-secondary-bg flex items-center justify-center text-text overflow-hidden">
-          {user.avatar ? (
-            <img
-              src={user.avatar}
-              alt={user.displayName}
-              className="w-full h-full object-cover"
-            />
-          ) : (
-            user.displayName?.charAt(0).toUpperCase()
-          )}
-        </div>
-        <div className="ml-3">
-          <h3 className="font-medium text-text">{user.displayName}</h3>
-          <p className="text-sm text-secondary-text">@{user.tag}</p>
-        </div>
-      </div>
-      {type === "received" ? (
-        <div className="flex gap-2">
-          <button
-            onClick={() => acceptFriendRequest(request.id)}
-            className="bg-accent text-white px-3 py-1 rounded-md text-sm hover:bg-accent-hover"
-          >
-            Accept
-          </button>
-          <button
-            onClick={() => rejectFriendRequest(request.id)}
-            className="bg-secondary-bg text-text px-3 py-1 rounded-md text-sm hover:bg-gray-hover"
-          >
-            Reject
-          </button>
-        </div>
-      ) : (
-        <div className="flex gap-2">
-          <span className="text-sm text-secondary-text italic">Pending</span>
-        </div>
-      )}
-    </div>
-  );
-};
-
-const EmptyState = ({
-  message,
-  actionText,
-  onAction,
-}: {
-  message: string;
-  actionText?: string;
-  onAction?: () => void;
-}) => (
-  <div className="flex flex-col items-center justify-center py-10 px-4 text-center">
-    <p className="text-secondary-text mb-4">{message}</p>
-    {actionText && onAction && (
-      <button
-        onClick={onAction}
-        className="text-accent hover:underline text-sm"
-      >
-        {actionText}
-      </button>
-    )}
-  </div>
-);
+import { useUserStore } from "../../store/userStore";
+import { chatApi } from "../../api/client";
+import { useAppStore } from "../../store/appStore";
+import FriendRequest from "./FriendRequest";
+import FriendItem from "./FriendItem";
 
 const Friends = () => {
   const [tag, setTag] = useState("");
@@ -216,9 +77,9 @@ const Friends = () => {
     <div
       className={`h-screen w-full flex ${
         isMobileView ? "flex-col" : ""
-      } bg-secondary-bg`}
+      } bg-secondary-bg overflow-hidden`}
     >
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col min-h-0">
         {selectedFriends.length > 0 && (
           <div className="sticky top-0 z-10 bg-secondary-bg px-4 py-2 border-b border-secondary-bg">
             <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center">
@@ -264,13 +125,20 @@ const Friends = () => {
 
         <div className="flex-1 overflow-y-auto p-4">
           {friends.length === 0 ? (
-            <EmptyState
-              message="You don't have any friends yet"
-              actionText="Find Friends"
-              onAction={() =>
-                document.getElementById("add-friend-input")?.focus()
-              }
-            />
+            <div className="flex flex-col items-center justify-center py-10 px-4 text-center">
+              <p className="text-secondary-text mb-4">
+                You don't have any friends yet
+              </p>
+
+              <button
+                onClick={() =>
+                  document.getElementById("add-friend-input")?.focus()
+                }
+                className="text-accent hover:underline text-sm"
+              >
+                Find Friends
+              </button>
+            </div>
           ) : (
             <div>
               {filteredFriends.length > 0 && (
@@ -299,7 +167,7 @@ const Friends = () => {
 
       <div
         className={`w-80 border-l border-secondary-bg bg-bg flex flex-col overflow-hidden ${
-          isMobileView ? "w-full border-t border-l-0" : ""
+          isMobileView ? "w-full border-t border-l-0 h-1/2" : "min-h-0"
         }`}
       >
         <div className="p-4 border-b border-secondary-bg">
@@ -328,7 +196,7 @@ const Friends = () => {
           </p>
         </div>
 
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1 overflow-y-auto min-h-0">
           <div className="p-4">
             <div className="flex justify-between items-center mb-3">
               <h2 className="text-sm font-medium text-secondary-text uppercase tracking-wider">
@@ -348,7 +216,7 @@ const Friends = () => {
                 </h3>
                 {pendingFriendRequests.received.map((request) => (
                   <div className="mb-2">
-                    <RequestItem
+                    <FriendRequest
                       key={request.id}
                       request={request}
                       type="received"
@@ -365,7 +233,7 @@ const Friends = () => {
                 </h3>
                 {pendingFriendRequests.sent.map((request) => (
                   <div className="mb-2">
-                    <RequestItem
+                    <FriendRequest
                       key={request.id}
                       request={request}
                       type="sent"
