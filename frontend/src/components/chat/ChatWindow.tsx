@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { formatDistanceToNow } from "date-fns";
-import { ArrowLeftIcon } from "lucide-react";
+import { ArrowLeftIcon, Trash2 } from "lucide-react";
 import { useChatStore } from "../../store/chatStore";
 import { Message } from "../../types/chat";
 import { useUserStore } from "../../store/userStore";
@@ -12,15 +12,30 @@ import { useAppStore } from "../../store/appStore";
 interface MessageBubbleProps {
   message: Message;
   isOwn: boolean;
+  isAdmin: boolean;
 }
 
-const MessageBubble = ({ message, isOwn }: MessageBubbleProps) => {
+const MessageBubble = ({ message, isOwn, isAdmin }: MessageBubbleProps) => {
+  const { deleteMessage } = useChatStore();
+
+  const showDelete = isOwn || isAdmin;
+
   return (
     <div className={`flex ${isOwn ? "justify-end" : "justify-start"} mb-4`}>
       <div
-        className={`max-w-[85%] md:max-w-[70%] rounded-lg px-4 py-2 shadow 
+        className={`group relative max-w-[85%] md:max-w-[70%] rounded-lg px-4 py-2 shadow 
           ${isOwn ? "bg-accent text-white" : "bg-bg text-text"}`}
       >
+        {showDelete && (
+          <button
+            onClick={() => deleteMessage(message.id)}
+            className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 p-1 rounded hover:bg-white/10"
+            title="Delete message"
+          >
+            <Trash2 className="h-4 w-4" />
+          </button>
+        )}
+
         <div className="text-sm font-medium mb-1">
           {message.sender.displayName}
         </div>
@@ -47,6 +62,8 @@ const GroupInfoModal = ({ onClose }: { onClose: () => void }) => {
     addParticipant,
     removeParticipant,
     makeParticipantAdmin,
+    leaveGroupConversation,
+    deleteGroupConversation,
   } = useChatStore();
 
   useEffect(() => {
@@ -73,6 +90,10 @@ const GroupInfoModal = ({ onClose }: { onClose: () => void }) => {
   const filteredFriends = nonParticipantFriends.filter((f) =>
     f.displayName.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  if (!currentConversation) {
+    return null;
+  }
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
@@ -112,29 +133,41 @@ const GroupInfoModal = ({ onClose }: { onClose: () => void }) => {
         <div className="mb-6">
           <h2 className="text-lg font-semibold mb-2 text-text">Participants</h2>
           <ul className="space-y-2 max-h-48 overflow-y-auto pr-1">
-            {currentConversation?.participants.map((participant) => {
-              const isMe = participant.user.id === user?.id;
-              const isParticipantAdmin = participant.isAdmin;
+            {currentConversation?.participants
+              .sort((a, b) => {
+                const isAme = a.user.id === user?.id;
+                const isBme = b.user.id === user?.id;
 
-              return (
-                <li
-                  key={participant.user.id}
-                  className="flex justify-between items-center px-3 py-2 bg-bg rounded-lg text-sm"
-                >
-                  <div className="text-text">
-                    <span className="font-medium">
-                      {participant.user.displayName}
-                    </span>
-                    {isParticipantAdmin && (
-                      <span className="ml-2 text-xs text-accent font-semibold">
-                        (Admin)
+                if (isAme) return -1;
+                if (isBme) return 1;
+
+                if (a.isAdmin && !b.isAdmin) return -1;
+                if (!a.isAdmin && b.isAdmin) return 1;
+
+                return 0;
+              })
+              .map((participant) => {
+                const isMe = participant.user.id === user?.id;
+                const isParticipantAdmin = participant.isAdmin;
+
+                return (
+                  <li
+                    key={participant.user.id}
+                    className="flex justify-between items-center px-3 py-2 bg-bg rounded-lg text-sm"
+                  >
+                    <div className="text-text">
+                      <span className="font-medium">
+                        {participant.user.displayName}
                       </span>
-                    )}
-                  </div>
+                      {isParticipantAdmin && (
+                        <span className="ml-2 text-xs text-accent font-semibold">
+                          (Admin)
+                        </span>
+                      )}
+                    </div>
 
-                  {isAdmin && !isMe && (
-                    <div className="flex gap-2">
-                      {!isParticipantAdmin && (
+                    {isAdmin && !isMe && (
+                      <div className="flex gap-2">
                         <button
                           onClick={() =>
                             makeParticipantAdmin(
@@ -144,25 +177,24 @@ const GroupInfoModal = ({ onClose }: { onClose: () => void }) => {
                           }
                           className="text-accent hover:text-accent-hover text-sm"
                         >
-                          Promote
+                          {isParticipantAdmin ? "Demote" : "Promote"}
                         </button>
-                      )}
-                      <button
-                        onClick={() =>
-                          removeParticipant(
-                            currentConversation.id,
-                            participant.user.id
-                          )
-                        }
-                        className="text-red hover:text-red-hover text-sm"
-                      >
-                        Kick
-                      </button>
-                    </div>
-                  )}
-                </li>
-              );
-            })}
+                        <button
+                          onClick={() =>
+                            removeParticipant(
+                              currentConversation.id,
+                              participant.user.id
+                            )
+                          }
+                          className="text-red hover:text-red-hover text-sm"
+                        >
+                          Kick
+                        </button>
+                      </div>
+                    )}
+                  </li>
+                );
+              })}
           </ul>
         </div>
 
@@ -204,6 +236,19 @@ const GroupInfoModal = ({ onClose }: { onClose: () => void }) => {
             )}
           </div>
         )}
+
+        <button
+          className="w-full bg-red text-white py-2 rounded-lg font-medium hover:bg-red-hover focus:outline-none focus:ring-2 focus:red focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed mb-4"
+          onClick={() =>
+            isAdmin && currentConversation.createdBy === user?.id
+              ? deleteGroupConversation(currentConversation.id)
+              : leaveGroupConversation(currentConversation?.id)
+          }
+        >
+          {isAdmin && currentConversation.createdBy === user?.id
+            ? "Delete"
+            : "Leave"}
+        </button>
       </div>
     </div>
   );
@@ -282,6 +327,10 @@ const ChatWindow = () => {
     : currentConversation.participants.find((p) => p.user.id !== user?.id)?.user
         .displayName;
 
+  const isAdmin =
+    currentConversation.participants.find((p) => p.user.id === user?.id)
+      ?.isAdmin ?? false;
+
   return (
     <div className="flex flex-col h-full relative">
       <div className="p-4 border-b border-accent flex-shrink-0 bg-bg flex justify-between items-center">
@@ -320,6 +369,7 @@ const ChatWindow = () => {
                 key={message.id}
                 message={message}
                 isOwn={message.sender.id === user?.id}
+                isAdmin={isAdmin}
               />
             ))}
             <div ref={messagesEndRef} />

@@ -15,10 +15,11 @@ interface Conversation {
   participants: Participant[];
   name: string | null;
   isGroup: boolean;
+  createdBy: string | null;
   createdAt: Date;
   updatedAt: Date;
   preview: string | null;
-  lastActivity: Date;
+  lastActivity: Date | string;
 }
 
 interface Participant {

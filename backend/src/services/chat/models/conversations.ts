@@ -6,6 +6,7 @@ const Conversations = pgTable("conversations", {
   id: uuid("id").primaryKey().defaultRandom(),
   name: varchar("name", { length: 255 }),
   isGroup: boolean("is_group").notNull().default(false),
+  createdBy: uuid("created_by").references(() => Users.id),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at")
     .notNull()

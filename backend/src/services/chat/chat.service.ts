@@ -153,6 +153,7 @@ const createGroupConversation = async (userId: string, name: string, participant
       .values({
         name,
         isGroup: true,
+        createdBy: user.id,
       })
       .returning()
   )[0];
@@ -346,6 +347,36 @@ const sendMessage = async (userId: string, conversationId: string, content: stri
   };
 };
 
+const deleteMessage = async (userId: string, messageId: string) => {
+  const message = (await db.select().from(Messages).where(eq(Messages.id, messageId)))[0];
+
+  if (!message) {
+    throw new AppError(ChatErrors.MESSAGE_NOT_FOUND);
+  }
+
+  if (message.senderId !== userId) {
+    const participant = (
+      await db
+        .select()
+        .from(ConversationParticipants)
+        .where(
+          and(
+            eq(ConversationParticipants.userId, userId),
+            eq(ConversationParticipants.conversationId, message.conversationId),
+          ),
+        )
+    )[0];
+
+    if (!participant || !participant.isAdmin) {
+      throw new AppError(ChatErrors.NOT_ADMIN);
+    }
+  }
+
+  await db.delete(MessageTranslations).where(eq(MessageTranslations.messageId, messageId));
+
+  await db.delete(Messages).where(eq(Messages.id, messageId));
+};
+
 const getMessageTranslation = async (userId: string, message: Message, languageId: string) => {
   const isUserParticipant = await isParticipant(userId, message.conversationId);
 
@@ -529,6 +560,10 @@ const removeParticipantFromGroupConversation = async (
     throw new AppError(ChatErrors.NOT_GROUP);
   }
 
+  if (conversation.createdBy === participantIdToRemove) {
+    throw new AppError(ChatErrors.NOT_OWNER);
+  }
+
   await db
     .delete(ConversationParticipants)
     .where(
@@ -598,9 +633,13 @@ const makeGroupConversationParticipantAdmin = async (userId: string, conversatio
     throw new AppError(ChatErrors.NOT_GROUP);
   }
 
+  if (conversation.createdBy === participantId) {
+    throw new AppError(ChatErrors.NOT_OWNER);
+  }
+
   await db
     .update(ConversationParticipants)
-    .set({ isAdmin: true })
+    .set({ isAdmin: sql`NOT ${ConversationParticipants.isAdmin}` })
     .where(
       and(
         eq(ConversationParticipants.userId, participantId),
@@ -611,38 +650,38 @@ const makeGroupConversationParticipantAdmin = async (userId: string, conversatio
   return await getConversationDetails(userId, conversationId);
 };
 
-const deleteMessage = async (userId: string, messageId: string) => {
-  const message = (await db.select().from(Messages).where(eq(Messages.id, messageId)))[0];
-
-  if (!message) {
-    throw new AppError(ChatErrors.MESSAGE_NOT_FOUND);
-  }
-
-  if (message.senderId !== userId) {
-    const participant = (
-      await db
-        .select()
-        .from(ConversationParticipants)
-        .where(
-          and(
-            eq(ConversationParticipants.userId, userId),
-            eq(ConversationParticipants.conversationId, message.conversationId),
-          ),
-        )
-    )[0];
-
-    if (!participant || !participant.isAdmin) {
-      throw new AppError(ChatErrors.NOT_ADMIN);
-    }
-  }
-
-  await db.delete(MessageTranslations).where(eq(MessageTranslations.messageId, messageId));
-
-  await db.delete(Messages).where(eq(Messages.id, messageId));
-};
-
 const leaveGroupConversation = async (userId: string, conversationId: string) => {
   await removeParticipantFromGroupConversation(userId, conversationId, userId);
+};
+
+const deleteGroupConversation = async (userId: string, conversationId: string) => {
+  const participant = (
+    await db
+      .select()
+      .from(ConversationParticipants)
+      .where(
+        and(eq(ConversationParticipants.userId, userId), eq(ConversationParticipants.conversationId, conversationId)),
+      )
+  )[0];
+
+  if (!participant) {
+    throw new AppError(ChatErrors.NOT_PARTICIPANT);
+  }
+
+  if (!participant.isAdmin) {
+    throw new AppError(ChatErrors.NOT_ADMIN);
+  }
+
+  const conversation = await getConversationById(conversationId);
+
+  if (conversation.createdBy !== userId) {
+    throw new AppError(ChatErrors.NOT_OWNER);
+  }
+
+  await db.delete(ConversationParticipants).where(eq(ConversationParticipants.conversationId, conversationId));
+  await db.delete(MessageTranslations).where(eq(MessageTranslations.messageId, conversationId));
+  await db.delete(Messages).where(eq(Messages.conversationId, conversationId));
+  await db.delete(Conversations).where(eq(Conversations.id, conversationId));
 };
 
 export {
@@ -651,12 +690,13 @@ export {
   getConversationDetails,
   isParticipant,
   getUserConversations,
+  deleteMessage,
   sendMessage,
   getConversationMessages,
   addParticipantToGroupConversation,
   removeParticipantFromGroupConversation,
   updateGroupConversationName,
   makeGroupConversationParticipantAdmin,
-  deleteMessage,
   leaveGroupConversation,
+  deleteGroupConversation,
 };

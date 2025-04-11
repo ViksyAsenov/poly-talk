@@ -215,12 +215,8 @@ const Friends = () => {
                   Received ({pendingFriendRequests.received.length})
                 </h3>
                 {pendingFriendRequests.received.map((request) => (
-                  <div className="mb-2">
-                    <FriendRequest
-                      key={request.id}
-                      request={request}
-                      type="received"
-                    />
+                  <div className="mb-2" key={request.id}>
+                    <FriendRequest request={request} type="received" />
                   </div>
                 ))}
               </div>
@@ -232,12 +228,8 @@ const Friends = () => {
                   Sent ({pendingFriendRequests.sent.length})
                 </h3>
                 {pendingFriendRequests.sent.map((request) => (
-                  <div className="mb-2">
-                    <FriendRequest
-                      key={request.id}
-                      request={request}
-                      type="sent"
-                    />
+                  <div className="mb-2" key={request.id}>
+                    <FriendRequest request={request} type="sent" />
                   </div>
                 ))}
               </div>

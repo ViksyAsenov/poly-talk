@@ -13,6 +13,7 @@ import {
   makeGroupConversationParticipantAdmin,
   deleteMessage,
   leaveGroupConversation,
+  deleteGroupConversation,
 } from "@controllers/chat";
 import { validateBodySchema, validateParamsSchema } from "@middlewares/validation";
 import { uuidParamsOrBodyValidation } from "@common/validations/uuidParamsOrBody";
@@ -28,6 +29,10 @@ const router = Router();
 router.get("/conversation", isAuth, getUserConversations);
 
 router.get("/conversation/:id", isAuth, validateBodySchema(uuidParamsOrBodyValidation), getConversationDetails);
+
+router.post("/message", isAuth, validateBodySchema(sendMessageBodyValidation), sendMessage);
+
+router.delete("/message/:id", isAuth, validateParamsSchema(uuidParamsOrBodyValidation), deleteMessage);
 
 router.get(
   "/conversation/:id/messages",
@@ -80,8 +85,11 @@ router.post(
   leaveGroupConversation,
 );
 
-router.post("/message", isAuth, validateBodySchema(sendMessageBodyValidation), sendMessage);
-
-router.delete("/message", isAuth, validateBodySchema(uuidParamsOrBodyValidation), deleteMessage);
+router.post(
+  "/conversation/group/delete",
+  isAuth,
+  validateBodySchema(uuidParamsOrBodyValidation),
+  deleteGroupConversation,
+);
 
 export default router;

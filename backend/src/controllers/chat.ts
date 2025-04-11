@@ -13,6 +13,7 @@ import {
   makeGroupConversationParticipantAdmin as makeGroupConversationParticipantAdminService,
   deleteMessage as deleteMessageService,
   leaveGroupConversation as leaveGroupConversationService,
+  deleteGroupConversation as deleteGroupConversationService,
 } from "@services/chat";
 
 import asyncErrorHandler from "@utils/asyncErrorHandler";
@@ -94,7 +95,7 @@ const makeGroupConversationParticipantAdmin = asyncErrorHandler(async (req: Requ
 });
 
 const deleteMessage = asyncErrorHandler(async (req: Request, res: Response) => {
-  const { id } = req.body as TUuidParamsOrBody;
+  const { id } = req.params as TUuidParamsOrBody;
   await deleteMessageService(req.user.id, id);
 
   res.json({ success: true, data: null });
@@ -107,17 +108,25 @@ const leaveGroupConversation = asyncErrorHandler(async (req: Request, res: Respo
   res.json({ success: true, data: null });
 });
 
+const deleteGroupConversation = asyncErrorHandler(async (req: Request, res: Response) => {
+  const { id } = req.body as TUuidParamsOrBody;
+  await deleteGroupConversationService(req.user.id, id);
+
+  res.json({ success: true, data: null });
+});
+
 export {
   createDirectConversation,
   createGroupConversation,
   getConversationDetails,
   getUserConversations,
   sendMessage,
+  deleteMessage,
   getConversationMessages,
   addParticipantToGroupConversation,
   removeParticipantFromGroupConversation,
   updateGroupConversationName,
   makeGroupConversationParticipantAdmin,
-  deleteMessage,
   leaveGroupConversation,
+  deleteGroupConversation,
 };

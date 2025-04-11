@@ -11,6 +11,7 @@ enum CHAT_ERROR_KEYS {
   INVALID_PARTICIPANT_DATA = "INVALID_PARTICIPANT_DATA",
   CANNOT_MESSAGE_SELF = "CANNOT_MESSAGE_SELF",
   NOT_ADMIN = "NOT_ADMIN",
+  NOT_OWNER = "NOT_OWNER",
   NOT_GROUP = "NOT_GROUP",
   DUPLICATE_PARTICIPANTS = "DUPLICATE_PARTICIPANTS",
 }
@@ -58,6 +59,11 @@ const ChatErrors: Record<CHAT_ERROR_KEYS, IAppError> = {
   },
   [CHAT_ERROR_KEYS.NOT_ADMIN]: {
     message_error: "User is not an admin of this group.",
+    status_code: 403,
+    service: ServiceType.CHAT,
+  },
+  [CHAT_ERROR_KEYS.NOT_OWNER]: {
+    message_error: "User is not the owner of this group.",
     status_code: 403,
     service: ServiceType.CHAT,
   },

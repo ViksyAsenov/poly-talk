@@ -32,6 +32,10 @@ const chatApi = {
     client.get<APIResponse<Conversation[]>>("/chat/conversation"),
   getConversationDetails: (id: string) =>
     client.get<APIResponse<Conversation>>(`/chat/conversation/${id}`),
+  sendMessage: (data: SendMessageRequest) =>
+    client.post<APIResponse<Message>>("/chat/message", data),
+  deleteMessage: (messageId: string) =>
+    client.delete(`/chat/message/${messageId}`),
   getMessages: (conversationId: string) =>
     client.get<APIResponse<Message[]>>(
       `/chat/conversation/${conversationId}/messages`
@@ -77,12 +81,10 @@ const chatApi = {
     ),
   leaveGroupConversation: (conversationId: string) =>
     client.post("/chat/conversation/group/participant/leave", {
-      conversationId,
+      id: conversationId,
     }),
-  sendMessage: (data: SendMessageRequest) =>
-    client.post<APIResponse<Message>>("/chat/message", data),
-  deleteMessage: (messageId: string) =>
-    client.delete(`/chat/message/${messageId}`),
+  deleteGroupConversation: (conversationId: string) =>
+    client.post("/chat/conversation/group/delete", { id: conversationId }),
 };
 
 export { authApi, userApi, chatApi };
