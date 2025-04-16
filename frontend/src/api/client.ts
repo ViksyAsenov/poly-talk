@@ -36,9 +36,11 @@ const chatApi = {
     client.post<APIResponse<Message>>("/chat/message", data),
   deleteMessage: (messageId: string) =>
     client.delete(`/chat/message/${messageId}`),
-  getMessages: (conversationId: string) =>
+  getMessages: (conversationId: string, before: string) =>
     client.get<APIResponse<Message[]>>(
-      `/chat/conversation/${conversationId}/messages`
+      `/chat/conversation/${conversationId}/messages?before=${encodeURIComponent(
+        before
+      )}`
     ),
   createDirectConversation: (userId: string) =>
     client.post("/chat/conversation/direct", { id: userId }),

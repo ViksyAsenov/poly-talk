@@ -3,6 +3,7 @@ import { formatDistanceToNow } from "date-fns";
 import { useChatStore } from "../../store/chatStore";
 import { Conversation } from "../../types/chat";
 import { useUserStore } from "../../store/userStore";
+import { useAppStore } from "../../store/appStore";
 
 interface ConversationItemProps {
   conversation: Conversation;
@@ -69,6 +70,7 @@ const ConversationItem = ({
 
 const ConversationList = () => {
   const navigate = useNavigate();
+  const { isMobileView } = useAppStore();
   const { conversations, currentConversation, setCurrentConversation } =
     useChatStore();
 
@@ -78,7 +80,11 @@ const ConversationList = () => {
   };
 
   return (
-    <div className="flex flex-col h-full border-r border-accent">
+    <div
+      className={`flex flex-col h-full  ${
+        isMobileView ? "" : "border-r border-accent"
+      }`}
+    >
       <div className="p-4 border-b border-accent bg-bg flex-shrink-0">
         <h3 className="text-lg font-semibold text-text">Conversations</h3>
       </div>

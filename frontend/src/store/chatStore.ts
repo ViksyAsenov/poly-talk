@@ -7,6 +7,7 @@ interface ChatState {
   conversations: Conversation[];
   currentConversation: Conversation | null;
   messages: Message[];
+  hasMoreMessages: boolean;
 
   setCurrentConversation: (conversation: Conversation | null) => void;
 
@@ -15,7 +16,10 @@ interface ChatState {
   addMessage: (conversationId: string, message: Message) => void;
   sendMessage: (conversationId: string, content: string) => Promise<void>;
   deleteMessage: (messageId: string) => Promise<void>;
-  fetchMessages: (conversationId: string) => Promise<void>;
+  fetchMessages: (
+    conversationId: string,
+    before: string | null
+  ) => Promise<void>;
 
   changeGroupConversationName: (id: string, name: string) => Promise<void>;
   makeParticipantAdmin: (id: string, userId: string) => Promise<void>;
@@ -29,6 +33,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
   conversations: [],
   currentConversation: null,
   messages: [],
+  hasMoreMessages: true,
 
   setCurrentConversation: (conversation) => {
     set({ currentConversation: conversation });
@@ -43,13 +48,19 @@ export const useChatStore = create<ChatState>((set, get) => ({
       set({ conversations: data });
     }
   },
-  fetchMessages: async (conversationId) => {
-    const response = await chatApi.getMessages(conversationId);
+  fetchMessages: async (conversationId, before) => {
+    const response = await chatApi.getMessages(
+      conversationId,
+      before ?? new Date().toISOString()
+    );
 
     const { success, data } = response.data;
 
     if (success) {
-      set({ messages: data });
+      set((state) => ({
+        messages: before ? [...data, ...state.messages] : data,
+        hasMoreMessages: data.length === 50,
+      }));
     }
   },
 

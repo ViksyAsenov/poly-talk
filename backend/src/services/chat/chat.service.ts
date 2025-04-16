@@ -1,5 +1,5 @@
 import { db } from "@config/db";
-import { eq, and, desc, sql } from "drizzle-orm";
+import { eq, and, desc, sql, lte } from "drizzle-orm";
 
 import { getMinUserById, areFriends } from "@services/user";
 import { getLanguageById, translateMessage } from "@services/language";
@@ -430,7 +430,11 @@ const getMessageTranslation = async (userId: string, message: Message, languageI
   };
 };
 
-const getConversationMessages = async (userId: string, conversationId: string): Promise<MessageData[]> => {
+const getConversationMessages = async (
+  userId: string,
+  conversationId: string,
+  before: Date,
+): Promise<MessageData[]> => {
   const user = await getMinUserById(userId);
   const isUserParticipant = await isParticipant(userId, conversationId);
 
@@ -441,8 +445,9 @@ const getConversationMessages = async (userId: string, conversationId: string): 
   const messages = await db
     .select()
     .from(Messages)
-    .where(eq(Messages.conversationId, conversationId))
-    .orderBy(Messages.createdAt);
+    .where(and(eq(Messages.conversationId, conversationId), lte(Messages.createdAt, before)))
+    .orderBy(Messages.createdAt)
+    .limit(25);
 
   const messagesWithTranslations = await Promise.all(
     messages.map(async (message) => {

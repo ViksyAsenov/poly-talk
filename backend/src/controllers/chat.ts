@@ -20,10 +20,12 @@ import asyncErrorHandler from "@utils/asyncErrorHandler";
 import { TUuidParamsOrBody } from "@common/validations/uuidParamsOrBody";
 import {
   TCreateGroupConversationBody,
+  TGetChatMessagesQuery,
   TSendMessageBody,
   TUpdateGroupConversationNameBody,
   TUpdateGroupConversationParticipantBody,
 } from "@services/chat/validations/chat";
+import logger from "@config/logger";
 
 const createDirectConversation = asyncErrorHandler(async (req: Request, res: Response) => {
   const { id } = req.body as TUuidParamsOrBody;
@@ -61,7 +63,9 @@ const sendMessage = asyncErrorHandler(async (req: Request, res: Response) => {
 
 const getConversationMessages = asyncErrorHandler(async (req: Request, res: Response) => {
   const { id } = req.params as TUuidParamsOrBody;
-  const messages = await getConversationMessagesService(req.user.id, id);
+  const { before } = req.query as unknown as TGetChatMessagesQuery;
+
+  const messages = await getConversationMessagesService(req.user.id, id, new Date(before));
 
   res.json({ success: true, data: messages });
 });

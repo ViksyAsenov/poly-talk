@@ -3,6 +3,14 @@ import { z } from "zod";
 import { createZodMessage } from "@utils/createZodMessage";
 import { ChatErrors } from "../constants";
 
+const getChatMessagesQueryValidation = z.object({
+  before: z
+    .string({ message: createZodMessage(ChatErrors.INVALID_MESSAGE_DATA) })
+    .refine((val) => !isNaN(Date.parse(val)), {
+      message: createZodMessage(ChatErrors.INVALID_MESSAGE_DATA),
+    }),
+});
+
 const createGroupConversationBodyValidation = z.object({
   name: z
     .string({ message: createZodMessage(ChatErrors.INVALID_GROUP_DATA) })
@@ -40,12 +48,14 @@ const updateGroupConversationParticipantBodyValidation = z.object({
     .uuid({ message: createZodMessage(ChatErrors.INVALID_GROUP_DATA) }),
 });
 
+export type TGetChatMessagesQuery = z.infer<typeof getChatMessagesQueryValidation>;
 export type TCreateGroupConversationBody = z.infer<typeof createGroupConversationBodyValidation>;
 export type TSendMessageBody = z.infer<typeof sendMessageBodyValidation>;
 export type TUpdateGroupConversationNameBody = z.infer<typeof updateGroupConversationNameBodyValidation>;
 export type TUpdateGroupConversationParticipantBody = z.infer<typeof updateGroupConversationParticipantBodyValidation>;
 
 export {
+  getChatMessagesQueryValidation,
   createGroupConversationBodyValidation,
   sendMessageBodyValidation,
   updateGroupConversationNameBodyValidation,

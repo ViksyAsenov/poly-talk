@@ -15,10 +15,11 @@ import {
   leaveGroupConversation,
   deleteGroupConversation,
 } from "@controllers/chat";
-import { validateBodySchema, validateParamsSchema } from "@middlewares/validation";
+import { validateBodySchema, validateParamsSchema, validateQuerySchema } from "@middlewares/validation";
 import { uuidParamsOrBodyValidation } from "@common/validations/uuidParamsOrBody";
 import {
   createGroupConversationBodyValidation,
+  getChatMessagesQueryValidation,
   sendMessageBodyValidation,
   updateGroupConversationNameBodyValidation,
   updateGroupConversationParticipantBodyValidation,
@@ -38,6 +39,7 @@ router.get(
   "/conversation/:id/messages",
   isAuth,
   validateParamsSchema(uuidParamsOrBodyValidation),
+  validateQuerySchema(getChatMessagesQueryValidation),
   getConversationMessages,
 );
 
