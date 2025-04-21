@@ -442,12 +442,14 @@ const getConversationMessages = async (
     throw new AppError(ChatErrors.NOT_PARTICIPANT);
   }
 
-  const messages = await db
-    .select()
-    .from(Messages)
-    .where(and(eq(Messages.conversationId, conversationId), lte(Messages.createdAt, before)))
-    .orderBy(Messages.createdAt)
-    .limit(25);
+  const messages = (
+    await db
+      .select()
+      .from(Messages)
+      .where(and(eq(Messages.conversationId, conversationId), lte(Messages.createdAt, before)))
+      .orderBy(desc(Messages.createdAt))
+      .limit(25)
+  ).reverse();
 
   const messagesWithTranslations = await Promise.all(
     messages.map(async (message) => {

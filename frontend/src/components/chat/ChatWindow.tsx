@@ -257,7 +257,6 @@ const GroupInfoModal = ({ onClose }: { onClose: () => void }) => {
 const ChatWindow = () => {
   const navigate = useNavigate();
   const { isMobileView } = useAppStore();
-  const containerRef = useRef<HTMLDivElement>(null);
   const {
     messages,
     currentConversation,
@@ -268,6 +267,8 @@ const ChatWindow = () => {
   } = useChatStore();
   const { user } = useUserStore();
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const skipAutoScrollRef = useRef(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [showGroupInfo, setShowGroupInfo] = useState(false);
 
   useEffect(() => {
@@ -297,6 +298,11 @@ const ChatWindow = () => {
   }, [currentConversation]);
 
   useEffect(() => {
+    if (skipAutoScrollRef.current) {
+      skipAutoScrollRef.current = false;
+      return;
+    }
+
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
@@ -313,30 +319,16 @@ const ChatWindow = () => {
     setCurrentConversation(null);
   };
 
-  const handleScroll = () => {
-    const container = containerRef.current;
-    if (!container || !hasMoreMessages || !currentConversation) return;
-
-    if (container.scrollTop < 100) {
-      const oldestMessage = messages[0];
-      if (oldestMessage) {
-        fetchMessages(
-          currentConversation.id,
-          new Date(oldestMessage.createdAt).toISOString()
-        );
-      }
-    }
+  const handleLoadMore = async () => {
+    if (!currentConversation || messages.length === 0 || loadingMore) return;
+    skipAutoScrollRef.current = true;
+    setLoadingMore(true);
+    await fetchMessages(
+      currentConversation.id,
+      new Date(messages[0].createdAt).toISOString()
+    );
+    setLoadingMore(false);
   };
-
-  useEffect(() => {
-    const container = containerRef.current;
-
-    if (container) {
-      container.addEventListener("scroll", handleScroll);
-      return () => container.removeEventListener("scroll", handleScroll);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [messages, hasMoreMessages, currentConversation]);
 
   if (!currentConversation) {
     return (
@@ -383,10 +375,7 @@ const ChatWindow = () => {
         )}
       </div>
 
-      <div
-        ref={containerRef}
-        className="flex-1 overflow-y-auto p-4 pb-6 bg-secondary-bg"
-      >
+      <div className="flex-1 overflow-y-auto p-4 pb-6 bg-secondary-bg">
         {messages.length === 0 ? (
           <div className="h-full flex items-center justify-center">
             <p className="text-secondary-text text-center">
@@ -395,6 +384,17 @@ const ChatWindow = () => {
           </div>
         ) : (
           <div>
+            {hasMoreMessages && (
+              <div className="flex justify-center mb-4">
+                <button
+                  onClick={handleLoadMore}
+                  className="text-accent hover:text-accent-hover text-sm"
+                >
+                  Load earlier messages
+                </button>
+              </div>
+            )}
+
             {messages.map((message) => (
               <MessageBubble
                 key={message.id}

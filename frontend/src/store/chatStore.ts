@@ -59,7 +59,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
     if (success) {
       set((state) => ({
         messages: before ? [...data, ...state.messages] : data,
-        hasMoreMessages: data.length === 50,
+        hasMoreMessages: data.length === 25,
       }));
     }
   },
